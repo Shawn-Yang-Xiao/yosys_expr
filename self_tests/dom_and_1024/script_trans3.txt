@@ -1,0 +1,343 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2025  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.58+74 (git sha1 272aa9cde, clang++ 18.1.8 -fPIC -O3)
+
+-- Executing script file `trans3.ys' --
+
+1. Executing Verilog-2005 frontend: dom_and.v
+Parsing Verilog input from `dom_and.v' to AST representation.
+verilog frontend filename dom_and.v
+Generating RTLIL representation for module `\bmux'.
+Generating RTLIL representation for module `\dom_and'.
+dom_and.v:26: Warning: Identifier `\n_8' is implicitly declared.
+dom_and.v:28: Warning: Identifier `\Xi_mul_Yj[3]' is implicitly declared.
+dom_and.v:29: Warning: Identifier `\Xi_mul_Yj_37' is implicitly declared.
+dom_and.v:30: Warning: Identifier `\Xi_mul_Yj' is implicitly declared.
+dom_and.v:31: Warning: Identifier `\Xi_mul_Yj[0]' is implicitly declared.
+dom_and.v:32: Warning: Identifier `\n_11' is implicitly declared.
+dom_and.v:34: Warning: Identifier `\n_13' is implicitly declared.
+Generating RTLIL representation for module `\CDN_flop'.
+Generating RTLIL representation for module `\CDN_bmux2'.
+dom_and.v:91: Warning: Identifier `\w_0' is implicitly declared.
+dom_and.v:91: Warning: Identifier `\inv_sel0' is implicitly declared.
+dom_and.v:92: Warning: Identifier `\w_1' is implicitly declared.
+Successfully finished Verilog frontend.
+
+2. Executing HIERARCHY pass (managing design hierarchy).
+
+2.1. Analyzing design hierarchy..
+Top module:  \dom_and
+Used module:     \CDN_flop
+Used module:     \bmux
+Used module:         \CDN_bmux2
+
+2.2. Analyzing design hierarchy..
+Top module:  \dom_and
+Used module:     \CDN_flop
+Used module:     \bmux
+Used module:         \CDN_bmux2
+Removed 0 unused modules.
+
+3. Executing PROC pass (convert processes to netlists).
+
+3.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+3.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 3 switch rules as full_case in process $proc$dom_and.v:56$10 in module CDN_flop.
+Removed a total of 0 dead cases.
+
+3.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 1 assignment to connection.
+
+3.4. Executing PROC_INIT pass (extract init attributes).
+Found init rule in `\CDN_flop.$proc$dom_and.v:68$11'.
+  Set init value: \qi = 1'0
+
+3.5. Executing PROC_ARST pass (detect async resets in processes).
+Found async reset \aclr in `\CDN_flop.$proc$dom_and.v:56$10'.
+Found async reset \apre in `\CDN_flop.$proc$dom_and.v:56$10'.
+
+3.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~2 debug messages>
+
+3.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\CDN_flop.$proc$dom_and.v:68$11'.
+Creating decoders for process `\CDN_flop.$proc$dom_and.v:56$10'.
+     1/1: $0\qi[0:0]
+
+3.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+
+3.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `\CDN_flop.\qi' using process `\CDN_flop.$proc$dom_and.v:56$10'.
+Warning: Complex async reset for dff `\qi'.
+  created $dffsr cell `$procdff$33' with positive edge clock and multiple level-sensitive resets.
+
+3.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+3.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Removing empty process `CDN_flop.$proc$dom_and.v:68$11'.
+Found and cleaned up 2 empty switches in `\CDN_flop.$proc$dom_and.v:56$10'.
+Removing empty process `CDN_flop.$proc$dom_and.v:56$10'.
+Cleaned up 2 empty switches.
+
+3.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module CDN_bmux2.
+Optimizing module CDN_flop.
+<suppressed ~3 debug messages>
+Optimizing module dom_and.
+Optimizing module bmux.
+
+4. Executing FLATTEN pass (flatten design).
+Deleting now unused module CDN_bmux2.
+Deleting now unused module CDN_flop.
+Deleting now unused module bmux.
+<suppressed ~9 debug messages>
+
+5. Executing OPT pass (performing simple optimizations).
+
+5.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+<suppressed ~44 debug messages>
+
+5.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+5.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \dom_and..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+    dead port 1/2 on $mux $flatten\FFxDP_reg[0].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 2/2 on $mux $flatten\FFxDP_reg[0].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 1/2 on $mux $flatten\FFxDP_reg[3].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 2/2 on $mux $flatten\FFxDP_reg[3].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 1/2 on $mux $flatten\FFxDP_reg[2].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 2/2 on $mux $flatten\FFxDP_reg[2].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 1/2 on $mux $flatten\FFxDP_reg[1].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+    dead port 2/2 on $mux $flatten\FFxDP_reg[1].$auto$proc_dff.cc:78:gen_dffsr_complex$31.
+Removed 8 multiplexer ports.
+
+5.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \dom_and.
+Performed a total of 0 changes.
+
+5.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+5.6. Executing OPT_DFF pass (perform DFF optimizations).
+Removing never-active SET on $flatten\FFxDP_reg[1].$procdff$33 ($dffsr) from module dom_and.
+Removing never-active SET on $flatten\FFxDP_reg[0].$procdff$33 ($dffsr) from module dom_and.
+Removing never-active SET on $flatten\FFxDP_reg[3].$procdff$33 ($dffsr) from module dom_and.
+Removing never-active SET on $flatten\FFxDP_reg[2].$procdff$33 ($dffsr) from module dom_and.
+
+5.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+Removed 3 unused cells and 77 unused wires.
+<suppressed ~8 debug messages>
+
+5.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+5.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \dom_and..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+5.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \dom_and.
+Performed a total of 0 changes.
+
+5.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+5.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+Removed 0 unused cells and 10 unused wires.
+<suppressed ~10 debug messages>
+
+5.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+5.16. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.17. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \dom_and..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+5.18. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \dom_and.
+Performed a total of 0 changes.
+
+5.19. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+5.20. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.21. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+
+5.22. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+5.23. Finished fast OPT passes. (There is nothing left to do.)
+
+6. Executing MEMORY pass.
+
+6.1. Executing OPT_MEM pass (optimize memories).
+Performed a total of 0 transformations.
+
+6.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write priority relations).
+Performed a total of 0 transformations.
+
+6.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback paths).
+
+6.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).
+
+6.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+
+6.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+
+6.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).
+
+6.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.
+
+6.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+
+6.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+6.11. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).
+
+7. Executing OPT pass (performing simple optimizations).
+
+7.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+7.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+7.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \dom_and..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+7.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \dom_and.
+Performed a total of 0 changes.
+
+7.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+7.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+7.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+
+7.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+7.9. Finished fast OPT passes. (There is nothing left to do.)
+
+8. Executing TECHMAP pass (map to technology primitives).
+
+8.1. Executing Verilog-2005 frontend: /home/xiaoyang/Desktop/projects/oss-cad-suite/lib/../share/yosys/techmap.v
+Parsing Verilog input from `/home/xiaoyang/Desktop/projects/oss-cad-suite/lib/../share/yosys/techmap.v' to AST representation.
+verilog frontend filename /home/xiaoyang/Desktop/projects/oss-cad-suite/lib/../share/yosys/techmap.v
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Generating RTLIL representation for module `\$connect'.
+Generating RTLIL representation for module `\$input_port'.
+Successfully finished Verilog frontend.
+
+8.2. Continuing TECHMAP pass.
+Using extmapper simplemap for cells of type $and.
+Using extmapper simplemap for cells of type $xor.
+Using extmapper simplemap for cells of type $adff.
+No more expansions possible.
+<suppressed ~87 debug messages>
+
+9. Executing OPT pass (performing simple optimizations).
+
+9.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+9.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+9.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \dom_and..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+9.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \dom_and.
+Performed a total of 0 changes.
+
+9.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\dom_and'.
+Removed a total of 0 cells.
+
+9.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+9.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \dom_and..
+
+9.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module dom_and.
+
+9.9. Finished fast OPT passes. (There is nothing left to do.)
+
+10. Executing RTLIL backend.
+Output filename: dom_and.il
+
+Warnings: 11 unique messages, 11 total
+End of script. Logfile hash: 04c046bdb1, CPU: user 0.02s system 0.01s, MEM: 16.28 MB peak
+Yosys 0.58+74 (git sha1 272aa9cde, clang++ 18.1.8 -fPIC -O3)
+Time spent: 39% 3x read_verilog (0 sec), 22% 9x opt_expr (0 sec), ...
