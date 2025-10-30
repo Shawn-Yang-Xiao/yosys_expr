@@ -489,6 +489,7 @@ struct TechmapWorker
 			for (auto &tpl_name : celltypeMap.at(cell_type))
 			{
 				IdString derived_name = tpl_name;
+				log("Tpl_name: %s.\n", derived_name.c_str());
 				RTLIL::Module *tpl = map->module(tpl_name);
 				dict<IdString, RTLIL::Const> parameters(cell->parameters);
 
@@ -1239,6 +1240,32 @@ struct TechmapPass : public Pass {
 					Frontend::frontend_call(map, nullptr, fn, (fn.size() > 3 && fn.compare(fn.size()-3, std::string::npos, ".il") == 0 ? "rtlil" : verilog_frontend));
 				}
 		}
+
+		
+		// print the design
+		log("===================== Print techmap ======================\n");
+		dict<RTLIL::IdString, RTLIL::Module*> modules_of_map = map->modules_;
+		for(std::pair<const RTLIL::IdString, RTLIL::Module*>module_pair : modules_of_map) {
+			log("Module name: %s.\n", module_pair.first.c_str());
+			dict<RTLIL::IdString, RTLIL::Wire *> wires_of_module = module_pair.second->wires_;
+			dict<RTLIL::IdString, RTLIL::Cell *> cells_of_module = module_pair.second->cells_;
+			log("  Wires:\n");
+			for(std::pair<const RTLIL::IdString, RTLIL::Wire *>wire_pair : wires_of_module) {
+				log("    %s\n", wire_pair.first.c_str());
+			}
+			log("  Cells:\n");
+			for(std::pair<const RTLIL::IdString, RTLIL::Cell *>cell_pair : cells_of_module) {
+				dict<RTLIL::IdString, RTLIL::SigSpec> conn_of_cell = cell_pair.second->connections_;
+				// parameters
+				log("    %s: type %s, conn ", cell_pair.first.c_str(), cell_pair.second->type.c_str());
+				for(std::pair<const RTLIL::IdString, RTLIL::SigSpec>conn_pair : conn_of_cell) {
+					log("%s ", conn_pair.first.c_str());
+				}
+				log("\n");
+			}
+		}
+		log("=========================================================\n");
+		
 
 		log_header(design, "Continuing TECHMAP pass.\n");
 
