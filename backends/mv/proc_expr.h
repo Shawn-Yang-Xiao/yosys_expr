@@ -68,8 +68,10 @@ struct Expr {
 
 
 struct Instruction {
+    enum class InstructionKind {
 
-}
+    } kind;
+};
 
 struct ModuleExpr {
     RTLIL::IdString name;
