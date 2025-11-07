@@ -6,6 +6,8 @@
 */
 
 
+void module_to_expr() {}
+
 void get_simcells_expr() {
 
     // get Design of simcells.v
@@ -39,7 +41,12 @@ void get_simcells_expr() {
     }
     log("=========================================================\n");
 
-
-    
+    // transform into expr formation 
+    for(std::pair<const RTLIL::IdString, RTLIL::Module*>module_pair : simcells_lib->modules_) {
+        
+    }
         
 }
+
+
+void 
