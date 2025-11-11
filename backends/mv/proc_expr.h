@@ -8,6 +8,8 @@ struct Var {
     Var(int i, const std::string &n) : id(i), name(n) { } 
 };
 
+
+
 enum class OpKind {
     Add,
     Mul,
@@ -69,8 +71,20 @@ struct Expr {
 
 struct Instruction {
     enum class InstructionKind {
-
+        IK_subst,   // := 
+        IK_glitch,  // =![ ] 
+        Leak,       // leak instruction 
+        MCall       // call a module
     } kind;
+    /*
+    in maskVerif, parsetree.ml, definition
+    type instr_kind =
+        | IK_subst (:=)
+        | IK_hide (= [ ])
+        | IK_sub (=)
+        | IK_glitch (=![ ])
+        | IK_noleak (<-)
+    */
 };
 
 struct ModuleExpr {
@@ -80,7 +94,10 @@ struct ModuleExpr {
     std::vector<Instruction> instructions;
 };
 
-struct DesignExpr {};
+struct DesignExpr {
+    dict<RTLIL::IdString, ModuleExpr*> modules_;
+    RTLIL::IdString top_module;
+};
 
 
 

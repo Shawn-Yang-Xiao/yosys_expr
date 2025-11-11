@@ -57,17 +57,40 @@ type func = {
   f_cmd    : cmd }
 ```
 
-We focus on `cmd` type: `type cmd = (instr located) list`
+We focus on `cmd` type, in prog.ml : `type cmd = instr list`
 
 Further, 
 ```OCaml
-type instr =
-  | Ileak of leak * string
+type instr_d =
+  | Ileak of leak
   | Iassgn of assgn
   | Imacro of macro_call
 ```
 
-`type assgn = {i_var : vcall; i_kind : instr_kind; i_expr : expr }`, left hand side `type vcall = vcall1 * shift option` has shift value. And so as `expr`'s var definition.
+`type assgn = {i_var : var; i_kind : P.instr_kind; i_expr : expr }`, left hand side `type var = E.var` is 
+```OCaml
+type var = {
+  v_id   : int;
+  v_name : string;
+  v_ty   : ty;
+}
+```
+in expr.ml.
+
+Take a look at Parsetree.instr_kind, how many instruction kind do we need?
+In maskVerif, there are:
+```OCaml
+type instr_kind =
+  | IK_subst (* := *)
+  | IK_hide (* = [ ] *)
+  | IK_sub (* = *)
+  | IK_glitch (* =![ ] *)
+  | IK_noleak (* <- *)
+```
+Among them, `IK_subst` is used at wire assignment, `IK_glitch` is used at reg assignment.
+
+
+
 
 Next, we see how the data types are processed.
 Now `func` is added into globals (skip `macro_expand_func` for now).
