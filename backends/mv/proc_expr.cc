@@ -6,7 +6,10 @@
 */
 
 
-void module_to_expr() {}
+ModuleExpr module_to_expr(const RTLIL::Module *module) {
+
+}
+
 
 void get_simcells_expr() {
 
@@ -41,12 +44,18 @@ void get_simcells_expr() {
     }
     log("=========================================================\n");
 
+    DesignExpr *simcells_design = new DesignExpr; 
+
     // transform into expr formation 
     for(std::pair<const RTLIL::IdString, RTLIL::Module*>module_pair : simcells_lib->modules_) {
+        ModuleExpr tmp_mod_expr =  module_to_expr(module_pair.second);
+        simcells_design->modules_[module_pair.first] = new ModuleExpr(tmp_mod_expr);
         
     }
         
 }
 
 
-void 
+void expr_
+
+
