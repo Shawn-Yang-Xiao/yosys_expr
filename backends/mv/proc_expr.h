@@ -31,20 +31,6 @@ struct Expr;
 using ExprPtr = std::shared_ptr<Expr>;  // support shared subexpression
 // QUESTION: Is this necessary?
 
-/*
-and expr_node =
-| Etop
-| Ernd   of rnd
-| Eshare of param * int * var (* the var is the original name *)
-| Epub   of var
-| Eop1   of operator * expr
-| Eop2   of operator * expr * expr
-| Eop    of bool * operator * expr array
-  (* Invariant [Eop(b,es)]
-       if b is true there is no duplicate in the array es *)
-| Econst of bool
-*/
-
 
 struct Expr {
     int e_id;

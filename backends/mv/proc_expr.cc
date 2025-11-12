@@ -7,6 +7,25 @@
 
 
 ModuleExpr module_to_expr(const RTLIL::Module *module) {
+    // transform basic cell definition module into expression form
+
+    // first collect wires, find input and output wires
+    // 	dict<RTLIL::IdString, RTLIL::Wire*> wires_;
+    std::vector<RTLIL::IdString> input_wires;
+    RTLIL::IdString output_wire;
+    std::vector<RTLIL::IdString> inner_wires;
+
+    for (std::pair<RTLIL::IdString, RTLIL::Wire*> w : module->wires) {
+        if (w.second->port_input == true) {
+            input_wires.push_back(w.first);
+        } else if (w.second->port_output == true) {
+            output_wire = w.first;
+        }
+        else {
+            inner_wires.push_back(w.first); // neither input wires nor output wire
+        }
+    }
+    // then topologically sort cells and transform into assign expressions
 
 }
 
