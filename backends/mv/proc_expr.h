@@ -1,5 +1,17 @@
 
+#ifndef PROC_EXPR_H
+#define PROC_EXPR_H
+
 #include <memory> // support shared_ptr
+#include <cstring>
+#include <vector>
+
+
+#include "kernel/rtlil.h"
+#include "kernel/yosys.h"
+
+USING_YOSYS_NAMESPACE
+
 // define expr
 
 struct Var {
@@ -23,7 +35,7 @@ struct Operator {
     bool is_bij;
     OpKind kind;
     Operator(int i, const std::string &n, bool bij, OpKind k) 
-        : id(i), name(n), is_bij(bij), kind(op_kind) { }
+        : id(i), name(n), is_bij(bij), kind(k) { }
 };
 
 struct Expr;
@@ -85,7 +97,13 @@ struct DesignExpr {
     RTLIL::IdString top_module;
 };
 
+// For sorting cells in simcell lib modules. 
+// Record predecessor and successors of a wire in cell
+struct WireConn {
+    RTLIL::IdString wire_name;
+    RTLIL::IdString pred;
+    std::vector<RTLIL::IdString> succs;
+};
 
 
-
-
+#endif // PROC_EXPR_H
