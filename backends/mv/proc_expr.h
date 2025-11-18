@@ -13,13 +13,10 @@
 USING_YOSYS_NAMESPACE
 
 // define expr
-
 struct Var {
-    int id;
     std::string name;
-    Var(int i, const std::string &n) : id(i), name(n) { } 
+    Var(const std::string &n) : name(n) { }
 };
-
 
 
 enum class OpKind {
@@ -30,12 +27,10 @@ enum class OpKind {
 };
 
 struct Operator {
-    int id;
-    std::string name;
     bool is_bij;
     OpKind kind;
-    Operator(int i, const std::string &n, bool bij, OpKind k) 
-        : id(i), name(n), is_bij(bij), kind(k) { }
+    Operator( bool bij, OpKind k) 
+        : is_bij(bij), kind(k) { }
 };
 
 struct Expr;
@@ -83,6 +78,8 @@ struct Instruction {
         | IK_glitch (=![ ])
         | IK_noleak (<-)
     */
+    Var* lhs;       // left-hand side variable, used in IK_subst and IK_glitch
+    ExprPtr rhs;    // right-hand side expression
 };
 
 struct ModuleExpr {

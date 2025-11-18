@@ -6,21 +6,141 @@
 */
 
 #include <cstring>
+#include <queue>
+#include <vector>
 
 #include "proc_expr.h"
 #include "kernel/yosys.h"
+#include "kernel/rtlil.h"
 
 
-void print_
+void print_const() {
+    log("PRINT A CONST, CURRENTLY NOT SOLVED, KEEP MONITORING.");
+}
+
+void print_sigchunk(const RTLIL::SigChunk chunk){
+    if(chunk.wire == NULL) { // distinguish between const and wire
+        print_const();
+    }
+    else {
+        if (chunk.width == chunk.wire->width && chunk.offset == 0) { 
+            // one bit signal, should be the only result in cell
+            log("%s", chunk.wire->name);
+        }
+        else if (chunk.width == 1) { // possible in module to connect wire and cell ports
+            log("%s [%d]", chunk.wire->name, chunk.offset);
+        }
+        else {
+            // multi bit signal
+            log("PRINT A MULTI-BIT SIGNAL, CURRENTLY NOT SOLVED, KEEP MONITORING.");
+        }
+    }
+}
 
 
-void print_cell(){}
+void print_sigspec (RTLIL::SigSpec sig) {
+    if (sig.is_chunk()) {
+        print_sigchunk(sig.as_chunk());
+    } else {
+        log("{ ");
+        for (const auto& chunk : sig.chunks() /*reversed(sig.chunks())*/) {
+            print_sigchunk(chunk);
+            log(" ");
+        }
+        log("}");
+    }
+}
+
+
+void print_conn(RTLIL::SigSpec left, RTLIL::SigSpec right) {
+    log("    connect " );
+    print_sigspec(left);
+    log(" ");
+    print_sigspec(right);
+    log("\n");
+    
+
+}
+
+
+void print_cell(const RTLIL::Cell *cell) {
+    log("    cell name %s, type %s\n", cell->name.c_str(), cell->type.c_str());
+    dict<RTLIL::IdString, RTLIL::SigSpec> conn_of_cell = cell->connections_;
+    for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn_pair : conn_of_cell) {
+        log("      port %s: sigspec ", conn_pair.first.c_str());
+        if (conn_pair.second.is_chunk()) {
+            // dump sigchunk
+            print_sigchunk(conn_pair.second.as_chunk());
+        }
+        else {
+            log("{ ");
+            for (const RTLIL::SigChunk &chunk : conn_pair.second.chunks()) {
+                print_sigchunk(chunk);
+                log(" ");
+            }
+            log("}");
+        }
+        log("\n");
+    }
+    log("\n");
+}
+
+/*
+void print_SigSig(std::pair<const RTLIL::SigSpec, RTLIL::SigSpec> sig_pair) {
+    log("      first: %s", sig_pair.first.as_string());
+    log("      second: %s", sig_pair.second.as_string());
+    log("\n");
+}
+*/
+
+
+void print_wire(const RTLIL::Wire *wire) {
+    log("  wire name %s,  ", wire->name.c_str());
+    log("width %d, id %d, offset %d", wire->width, wire->port_id, wire->start_offset);
+    if (wire->port_input) {
+        log(", input port");
+    }
+    if (wire->port_output) {
+        log(", output port");
+    }
+    log("\n");
+}
 
 
 void print_module(const RTLIL::Module *module) {
-    log("Module name: %s.\n", module->second.c_str());
-    ;
+    log("Module name: %s.\n", module->name.c_str());
+    dict<RTLIL::IdString, RTLIL::Wire *> wires_of_module = module->wires_;
+    dict<RTLIL::IdString, RTLIL::Cell *> cells_of_module = module->cells_;
+    std::vector<RTLIL::SigSig> connections_of_module = module->connections_;
+    // print wires in each module
+    log("  Wires:\n");
+    for (std::pair<const RTLIL::IdString, RTLIL::Wire *> wire_pair : wires_of_module) {
+        log("    wire id %s ", wire_pair.first.c_str());
+        print_wire(wire_pair.second);
+    }
+    // print connections in each module
+    /*
+    log("  Connections:\n");
+    for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_pair : connections_of_module) {
+        // 
+        print_SigSig(conn_pair);
+    }
+    */
+    log("  Connections:\n");
+    for (const auto& [lhs, rhs] : module->connections()) { // borrow from rtlil backend
+        RTLIL::SigSpec sigs = lhs;
+        sigs.append(rhs);
+        print_conn(lhs, rhs);
+        log("\n");
+    }
+    // just use connection 
+    log("  Cells:\n");
+    for (std::pair<RTLIL::IdString, RTLIL::Cell *> cell_pair : cells_of_module) {
+        log("    cell id %s ", cell_pair.first.c_str());
+        print_cell(cell_pair.second);
+    }
 }
+
 
 void print_design(const RTLIL::Design *design){
     dict<RTLIL::IdString, RTLIL::Module*> modules_of_simcells = design->modules_;
@@ -84,6 +204,136 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
 }
 */
 
+
+struct PortInfo{
+    RTLIL::IdString cell_type;
+    RTLIL::IdString cell_id;
+    RTLIL::IdString port_name;
+};
+
+
+cell_to_expr() {}
+
+ModuleExpr module_to_expr(const RTLIL::Module *module) {
+    // transform basic module definition into expression form
+    // this transformation is used for simcell lib modules
+    // so there can be multiple bit signals
+
+    std::vector<Instruction> insts; // store instructions in the module, generate in reversed order
+
+    // first collect wires, find input and output wires
+    std::vector<RTLIL::IdString> input_wires;
+    RTLIL::IdString output_wire;
+    std::vector<RTLIL::IdString> inner_wires;
+
+    for (std::pair<RTLIL::IdString, RTLIL::Wire*> w : module->wires_) {
+        if (w.second->port_input == true) {
+            input_wires.push_back(w.first);
+        } else if (w.second->port_output == true) {
+            output_wire = w.first;
+        }
+        else {
+            inner_wires.push_back(w.first); // neither input wires nor output wire
+        }
+    }
+    // Traverse connection to link input and output wires
+    // wire/const -- wire, wire_conn[wire] = wire/const
+    dict<RTLIL::Wire, RTLIL::SigBit> wire_conn;
+    // port -- wire , outport_conn[wire] = port
+    dict<RTLIL::Wire, PortInfo> outport_conn;
+    // wire/const -- port inport_conn[port] = wire/const
+    dict<PortInfo, RTLIL::SigBit> inport_conn;
+    // Traverse connections, add to wire_conn
+    for (std::pair<const RTLIL::SigSpec, RTLIL::SigSpec> c : module->connections_) {
+        // connect left right, right -> left
+        // so generate wire_conn[left] = right
+        RTLIL::SigSpec lhs = c.first;
+        RTLIL::SigSpec rhs = c.second;
+        if (lhs.is_wire()) {
+            if (rhs.is_wire() || rhs.is_fully_const()) {
+                RTLIL::Wire *lhs_wire = lhs.as_wire();
+                RTLIL::SigBit rhs_sigbit = rhs.as_bit();
+                wire_conn[*lhs_wire] = rhs_sigbit;
+            } else {
+                log("UNEXPECTED OCCATION: RIGHT HAND SIDE OF CONNECTION IS NOT WIRE/CONST.\n");
+            }
+        } else {
+            log("UNEXPECTED OCCATION: LEFT HAND SIDE OF CONNECTION IS NOT WIRE.\n");
+        }
+    }
+    // Traverse cells, add to inport_conn and outport_conn
+    for (std::pair<RTLIL::IdString, RTLIL::Cell*> c : module->cells_) {
+        // input port
+        dict<RTLIL::IdString, RTLIL::SigSpec> conns = c.second->connections_;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> p : conns) {
+            RTLIL::IdString port_name = p.first;
+            RTLIL::SigSpec sig = p.second;
+            if (c.second->input(port_name)) {
+                // add{ into inport_conn
+                if (sig.is_fully_const() || sig.is_wire()) {
+                    RTLIL::SigBit tmpSigbit = sig.as_bit();
+                    inport_conn[{c.second->type, c.second->name, port_name}] = tmpSigbit;
+                } else {
+                    log("UNEXPECTED OCCATION: INPUT PORT CONNECTING SIGNAL OTHER THAN WIRE/CONST.\n");
+                }
+            } else if (c.second->output(port_name)) {
+                // add into outport_conn
+                if (sig.is_wire()) {
+                    RTLIL::Wire *tmpWire = sig.as_wire();
+                    outport_conn[*tmpWire] = {c.second->type, c.second->name, port_name};
+                } else {
+                    log("UNEXPECTED OCCATION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
+                }
+            }
+        }
+    }
+
+    // TODO: maybe print three dicts to debug
+    // use a queue for dfs traversal
+    queue<RTLIL::Wire*> wire_queue;
+    wire_queue.push(output_wire);
+    // first traverse wire_conn and outport_conn to build exprs for output ports
+    // if is outport_conn, then build expr for the cell
+    while (wire_queue.empty() == false) {
+        RTLIL::Wire *curr_wire = wire_queue.front();
+        wire_queue.pop();
+        // search curr_wire in wire_conn
+        RTLIL::SigBit pred_sigbit = wire_conn[*curr_wire];
+        if (pred_sigbit != NULL) {
+            // pred_sigbit is wire/const
+            if (pred_sigbit.is_wire()) {
+                RTLIL::Wire *pred_wire = pred_sigbit.wire;
+                wire_queue.push(pred_wire);
+                // TODO: generate instruction of wire assignment from pred_wire to curr_wire
+                // then add to insts
+
+            } else if (pred_sigbit.is_fully_const()) {
+                RTLIL::Const pred_const = pred_sigbit.as_const();
+            } else {
+                log("UNEXPECTED OCCATION: PREDECESSOR SIGBIT IS NEITHER WIRE NOR CONST.\n");
+            }
+        } else {
+            // pred_sigbit is NULL
+            PortInfo pred_port = outport_conn[*curr_wire];
+            if () {
+                // build expr for the cell
+                cell_to_expr();
+            } else {
+
+            }
+        }
+        
+
+
+    }
+
+
+}
+
+
+
+
+
 void get_simcells_expr() {
 
     // get Design of simcells.v
@@ -97,6 +347,7 @@ void get_simcells_expr() {
     log("===================== Print simcells ======================\n");
     print_design(simcells_lib);
 
+    /*
     // print the design 
     log("===================== Print simcells ======================\n");
     dict<RTLIL::IdString, RTLIL::Module*> modules_of_simcells = simcells_lib->modules_;
@@ -118,55 +369,10 @@ void get_simcells_expr() {
             log("    first:");
             std::string s1 = conn_pair.first.as_string();
             log(" %s\n", s1);
-            /*
-            // print chunks_
-            log("      chunk: ");
-            for (RTLIL::SigChunk fst_chunk : conn_pair.first.chunks_) {
-                if (fst_chunk.wire != NULL) {
-                    log("(%s, offset %d, width %d) ", fst_chunk.wire->name.c_str(), fst_chunk.offset, fst_chunk.width);
-                } else {
-                    log("(");
-                    for (RTLIL::State s : fst_chunk.data) {
-                        log("%d ", s);
-                    }
-                    log("width %d)", fst_chunk.width);
-                }
-            }
-            log("\n");
-            // print bits_
-            log("      bits: ");
-            for (RTLIL::SigBit fst_bit : conn_pair.first.bits_) {
-                if (fst_bit.wire != NULL) {
-                    log("(%s, offset %d) ", fst_bit.wire->name.c_str(), fst_bit.offset);
-                } else {
-                    log("(const %d) ", fst_bit.data);
-                }
-            }
-            log("\n");
-            */
             // print .second
             log("    second:");
             std::string s2 = conn_pair.second.as_string();
             log(" %s\n", s2);
-            /*
-            // print chunks_
-            log("      chunk: ");
-            for (RTLIL::SigChunk snd_chunk : conn_pair.second.chunks_) {
-                if (snd_chunk.wire != NULL) {
-                    log("(%s, offset %d, width %d)", snd_chunk.wire->name.c_str(), snd_chunk.offset, snd_chunk.width);
-                }
-            }
-            // print bits_
-            for(RTLIL::SigBit snd_bit : conn_pair.second.bits_) {
-                if (snd_bit.wire != NULL) {
-                    log("(%s, offset %d) ", snd_bit.wire->name.c_str(), snd_bit.offset);
-                } else {
-                    log("(const %d) ", snd_bit.data);
-                }
-                log("\n");
-            }
-            log("\n");
-            */
         }
         // print cells_ in each module
         log("  Cells:\n");
@@ -180,32 +386,6 @@ void get_simcells_expr() {
                 log("      port %s: sigspec ", conn_pair.first.c_str());
                 RTLIL::SigSpec sig = conn_pair.second;
                 log("%s", sig.as_string());
-                /*
-                // print chunks_
-                log("        chunk: ");
-                for (RTLIL::SigChunk chunk : sig.chunks_) {
-                    if (chunk.wire != NULL) {
-                        log("(%s, offset %d, width %d) ", chunk.wire->name.c_str(), chunk.offset, chunk.width);
-                    } else {
-                        log("(");
-                        for (RTLIL::State s : chunk.data) {
-                            log("%d ", s);
-                        }
-                        log("width %d)", chunk.width);
-                    }
-                }
-                log("\n");
-                // print bits_
-                log("        bits: ");
-                for (RTLIL::SigBit bit : sig.bits_) {
-                    if (bit.wire != NULL) {
-                        log("(%s, offset %d) ", bit.wire->name.c_str(), bit.offset);
-                    } else {
-                        log("(const %d) ", bit.data);
-                    }
-                }
-                log("\n");
-                */
             }
             log("\n");
             // print cell parameters 
@@ -222,6 +402,7 @@ void get_simcells_expr() {
         }
     }
     log("=========================================================\n");
+    */
     
     // DesignExpr *simcells_design = new DesignExpr; 
 
