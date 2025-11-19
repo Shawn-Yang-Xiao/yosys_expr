@@ -163,14 +163,15 @@ struct PortCorrespond{
     RTLIL::SigBit sig;
 };
 
-
+/*
 Expr elim_const_in_expr(Expr ex) {
     // if there is a const in expr, transform biop into uniop
     Expr ret;
 
 }
-
-Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<RTLIL::PortCorrespond> inputs, std::vector<RTLIL::PortCorrespond> output ) { // Add a vector of input signals, and output signal,
+    */
+/*
+Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> inputs, std::vector<PortCorrespond> output ) { // Add a vector of input signals, and output signal,
     // generate an instruction from the expr
     Instruction ret;
     std::string cell_type_name = cell_type.c_str();
@@ -191,6 +192,7 @@ Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<RTLIL::PortCorre
         default:
             log("UNEXPECTED OCCASION: CELL %s IN MODULE.\n", cell_type_name);
 }
+*/
 
 ModuleExpr module_to_expr(const RTLIL::Module *module) {
     // transform basic module definition into expression form
@@ -221,6 +223,9 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
     dict<RTLIL::Wire, PortInfo> outport_conn;
     // wire/const -- port inport_conn[port] = wire/const
     dict<PortInfo, RTLIL::SigBit> inport_conn;
+
+    // ANOTHER INPORT CONNECTION SEARCH DICT, THE INDEX IS CELL ID, maybe include cell type name also
+    dict<RTLIL::IdString, std::vector< std::pair<RTLIL::IdString, RTLIL::SigBit> > > cellinport_conn;
     // Traverse connections, add to wire_conn
     for (std::pair<const RTLIL::SigSpec, RTLIL::SigSpec> c : module->connections_) {
         // connect left right, right -> left
@@ -262,10 +267,39 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
                 } else {
                     log("UNEXPECTED OCCATION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
                 }
+            } else {
+                log("UNEXPECTED OCCATION: PORT NEITHER INPUT NOR OUTPUT.\n");
+            }
+        }
+    }
+    // generate cell inport connection dict, same usage as inport conn 
+    for (std::pair<RTLIL::IdString, RTLIL::Cell*> c : module->cells_) {
+        dict<RTLIL::IdString, RTLIL::SigSpec> conns = c.second->connections_;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> p : conns) {
+            RTLIL::IdString port_name = p.first;
+            RTLIL::SigSpec sig = p.second;
+            if (c.second->input(port_name)) {
+                if (sig.is_fully_const() || sig.is_wire()) {
+                    RTLIL::SigBit tmpSigbit = sig.as_bit();
+                    cellinport_conn[c.second->name].push_back( {port_name, tmpSigbit} );
+                } else {
+                    log("UNEXPECTED OCCATION: INPUT PORT CONNECTING SIGNAL OTHER THAN WIRE/CONST.\n");
+                }
+            } else if (c.second->output(port_name)) {
+                // add into outport_conn
+                if (sig.is_wire()) {
+                    RTLIL::Wire *tmpWire = sig.as_wire();
+                    outport_conn[*tmpWire] = {c.second->type, c.second->name, port_name};
+                } else {
+                    log("UNEXPECTED OCCATION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
+                }
+            } else {
+                log("UNEXPECTED OCCATION: PORT NEITHER INPUT NOR OUTPUT.\n");
             }
         }
     }
 
+    /*
     // TODO: maybe print three dicts to debug
     // use a queue for dfs traversal
     queue<RTLIL::Wire*> wire_queue;
@@ -284,9 +318,11 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
                 wire_queue.push(pred_wire);
                 // TODO: generate instruction of wire assignment from pred_wire to curr_wire
                 // then add to insts
+                
 
             } else if (pred_sigbit.is_fully_const()) {
                 RTLIL::Const pred_const = pred_sigbit.as_const();
+
             } else {
                 log("UNEXPECTED OCCATION: PREDECESSOR SIGBIT IS NEITHER WIRE NOR CONST.\n");
             }
@@ -296,17 +332,17 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
             if (pred_port != NULL) {
                 // build expr for the cell
                 // Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<RTLIL::PortCorrespond> inputs, std::vector<RTLIL::PortCorrespond> output )
-                /* 
-                struct PortInfo{
-                    RTLIL::IdString cell_type;
-                    RTLIL::IdString cell_id;
-                    RTLIL::IdString port_name;
-                };
-                */
+                
+                // struct PortInfo{
+                //     RTLIL::IdString cell_type;
+                //     RTLIL::IdString cell_id;
+                //     RTLIL::IdString port_name;
+                // };
+                
                 RTLIL::IdString tmpCellName = pred_port.cell_type;
                 RTLIL::IdString tmpCellId = pred_port.cell_id;
                 // get input signal pairs
-                // TODO: how to search information of cell with cell id?
+                // TODO: how to search information of cell with cell id? maybe there are given ways to search cell lib for ports 
                 
                 // generate output signal pair 
 
@@ -315,12 +351,9 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
                 log("UNEXPECTED OCCATION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
             }
         }
-        
-
-
     }
-
-
+    */
+    return ModuleExpr(); // TODO: return module expr
 }
 
 
