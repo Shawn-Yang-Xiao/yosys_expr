@@ -152,67 +152,45 @@ void print_design(const RTLIL::Design *design){
 }
 
 
-/*
-ModuleExpr module_to_expr(const RTLIL::Module *module) {
-    // transform basic cell definition module into expression form
-
-    // first collect wires, find input and output wires
-    // 	dict<RTLIL::IdString, RTLIL::Wire*> wires_;
-    std::vector<RTLIL::IdString> input_wires;
-    RTLIL::IdString output_wire;
-    std::vector<RTLIL::IdString> inner_wires;
-
-    for (std::pair<RTLIL::IdString, RTLIL::Wire*> w : module->wires_) {
-        if (w.second->port_input == true) {
-            input_wires.push_back(w.first);
-        } else if (w.second->port_output == true) {
-            output_wire = w.first;
-        }
-        else {
-            inner_wires.push_back(w.first); // neither input wires nor output wire
-        }
-    }
-    // Traverse cells to build wire connection graph
-    // generate WireConn structs for each wire 
-    for (std::pair<RTLIL::IdString, RTLIL::Cell*> c : module->cells_) {
-        dict<RTLIL::IdString, RTLIL::SigSpec> conns = c.second->connections_;
-        // for each conn, find predecessor and successors
-        // assume only one predecessor and one successor for each wire in simcells
-        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> p : conns) {
-            RTLIL::IdString port_name = p.first;
-            RTLIL::SigSpec sig = p.second;
-            // for each sig, get wire name 
-            for (const RTLIL::SigChunk &chunk : sig.chunks()) {
-                RTLIL::IdString wire_name = chunk.wire->name;
-                // if port is input port of the cell, then wire is predecessor
-                // if port is output port of the cell, then wire is successor
-                if (is_input_port(c.second->type, port_name)) {
-                    // wire is predecessor 
-                } else if (is_output_port(c.second->type, port_name)) {
-                    // wire is successor
-                }
-            }
-        }
-
-    }
-    // then topologically sort cells and transform into assign expressions
-    std::vector<RTLIL::IdString> sorted_cells; // store cell names in topological order
-
-    for () {
-
-    }
-}
-*/
-
-
 struct PortInfo{
     RTLIL::IdString cell_type;
     RTLIL::IdString cell_id;
     RTLIL::IdString port_name;
 };
 
+struct PortCorrespond{
+    RTLIL::IdString port_name;
+    RTLIL::SigBit sig;
+};
 
-cell_to_expr() {}
+
+Expr elim_const_in_expr(Expr ex) {
+    // if there is a const in expr, transform biop into uniop
+    Expr ret;
+
+}
+
+Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<RTLIL::PortCorrespond> inputs, std::vector<RTLIL::PortCorrespond> output ) { // Add a vector of input signals, and output signal,
+    // generate an instruction from the expr
+    Instruction ret;
+    std::string cell_type_name = cell_type.c_str();
+    std::string lhs_name = output.sig->wire.name.c_str();
+    // fetch input signals
+
+
+    switch (cell_type_name)
+        case "$not" : 
+            ret.kind = IK_subst;
+            ret.lhs = Var(lhs_name);
+            
+            break;
+        case "$pos" :
+            break;
+        case "$neg" :
+            break;
+        default:
+            log("UNEXPECTED OCCASION: CELL %s IN MODULE.\n", cell_type_name);
+}
 
 ModuleExpr module_to_expr(const RTLIL::Module *module) {
     // transform basic module definition into expression form
@@ -313,13 +291,28 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
                 log("UNEXPECTED OCCATION: PREDECESSOR SIGBIT IS NEITHER WIRE NOR CONST.\n");
             }
         } else {
-            // pred_sigbit is NULL
+            // pred_sigbit is NULL, so pred is not in wire queue, search if it is in outport conn
             PortInfo pred_port = outport_conn[*curr_wire];
-            if () {
+            if (pred_port != NULL) {
                 // build expr for the cell
-                cell_to_expr();
-            } else {
+                // Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<RTLIL::PortCorrespond> inputs, std::vector<RTLIL::PortCorrespond> output )
+                /* 
+                struct PortInfo{
+                    RTLIL::IdString cell_type;
+                    RTLIL::IdString cell_id;
+                    RTLIL::IdString port_name;
+                };
+                */
+                RTLIL::IdString tmpCellName = pred_port.cell_type;
+                RTLIL::IdString tmpCellId = pred_port.cell_id;
+                // get input signal pairs
+                // TODO: how to search information of cell with cell id?
+                
+                // generate output signal pair 
 
+                cell_to_expr(tmpCellName, );
+            } else {
+                log("UNEXPECTED OCCATION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
             }
         }
         

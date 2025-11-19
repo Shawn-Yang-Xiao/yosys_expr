@@ -14,9 +14,11 @@ USING_YOSYS_NAMESPACE
 
 // define expr
 struct Var {
-    std::string name;
+    std::string name; 
     Var(const std::string &n) : name(n) { }
 };
+// FIXME: there is no const, what if a cell input is const
+// how does maskVerif deal with const in Ilang file?
 
 
 enum class OpKind {
@@ -78,7 +80,7 @@ struct Instruction {
         | IK_glitch (=![ ])
         | IK_noleak (<-)
     */
-    Var* lhs;       // left-hand side variable, used in IK_subst and IK_glitch
+    Var lhs;       // left-hand side variable, used in IK_subst and IK_glitch
     ExprPtr rhs;    // right-hand side expression
 };
 

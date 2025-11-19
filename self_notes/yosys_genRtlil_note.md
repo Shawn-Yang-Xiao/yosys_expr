@@ -12,7 +12,10 @@ $shiftx, $shift,
 $lt, $le, $eq, $ne, $eqx, $nex, $ge, $gt,
 $add, $mul, $sub, $div, $mod, $mux
 $logic_and, $logic_or, $logic_not, 
-$memrd, $meminit_v2. $check, $specify2, $specify3, $specrule, $print, 
+$memrd, $meminit_v, $check, $specify2, $specify3, $specrule, $print, 
 ```
+
+
+Implementation is stored in techlibs/common/simlib.v
 
 
