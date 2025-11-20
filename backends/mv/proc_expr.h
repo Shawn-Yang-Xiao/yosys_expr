@@ -16,6 +16,9 @@ USING_YOSYS_NAMESPACE
 struct Var {
     std::string name; 
     Var(const std::string &n) : name(n) { }
+
+    bool operattor==(const Var &b) const { return name == b.name; }
+    Hasher hash_into(Hasher h) const { return mkhash(h,nmae.c_str()) };
 };
 // FIXME: there is no const, what if a cell input is const
 // how does maskVerif deal with const in Ilang file?
@@ -37,10 +40,25 @@ struct Operator {
 
 struct Expr;
 
-using ExprPtr = std::shared_ptr<Expr>;  // support shared subexpression
+// using ExprPtr = std::shared_ptr<Expr>;  // support shared subexpression
 // QUESTION: Is this necessary?
 
 
+struct Expr {
+    enum class Op {
+        VAR,
+        CONST,
+        OP1,
+        OP2,
+        OPN
+    };
+    Operator op;
+    Var* var; // when the expr is a var
+    bool const_val = false; // when expr is a const, true or false
+    std::vector<Expr*> args;
+};
+
+/*
 struct Expr {
     int e_id;
     enum class NodeType {
@@ -60,8 +78,8 @@ struct Expr {
     ExprPtr arg1, arg2;         // for Eop1, Eop2
     std::vector<ExprPtr> args;  // for Eop
     bool const_val = false;     // for Econst
-
 };
+*/
 
 
 struct Instruction {
@@ -81,7 +99,7 @@ struct Instruction {
         | IK_noleak (<-)
     */
     Var lhs;       // left-hand side variable, used in IK_subst and IK_glitch
-    ExprPtr rhs;    // right-hand side expression
+    Expr* rhs;    // right-hand side expression
 };
 
 struct ModuleExpr {
