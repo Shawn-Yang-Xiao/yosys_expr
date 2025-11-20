@@ -256,8 +256,8 @@ Expr elim_const_in_expr(Expr ex) {
     Expr ret;
 
 }
-    */
-/*
+*/
+
 Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> inputs, std::vector<PortCorrespond> output ) { // Add a vector of input signals, and output signal,
     // generate an instruction from the expr
     Instruction ret;
@@ -270,7 +270,7 @@ Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> 
         case "$not" : 
             ret.kind = IK_subst;
             ret.lhs = Var(lhs_name);
-            
+            ret.rhs = 
             break;
         case "$pos" :
             break;
@@ -279,7 +279,7 @@ Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> 
         default:
             log("UNEXPECTED OCCASION: CELL %s IN MODULE.\n", cell_type_name);
 }
-*/
+
 
 
     void print_wire_conn(dict<RTLIL::Wire*, RTLIL::SigBit> wire_conn) {
@@ -356,7 +356,7 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
     // port -- wire , outport_conn[wire] = port
     dict<RTLIL::Wire*, PortInfo> outport_conn;
     // wire/const -- port inport_conn[port] = wire/const
-    dict<PortInfo, RTLIL::SigBit> inport_conn;
+    // dict<PortInfo, RTLIL::SigBit> inport_conn;
 
     // ANOTHER INPORT CONNECTION SEARCH DICT, THE INDEX IS CELL ID, maybe include cell type name also
     dict<RTLIL::IdString, std::vector< std::pair<RTLIL::IdString, RTLIL::SigBit> > > cellinport_conn;
@@ -369,7 +369,7 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
         if (lhs.is_wire()) {
             if (rhs.is_wire() || rhs.is_fully_const()) {
                 RTLIL::Wire *lhs_wire = lhs.as_wire();
-                print_bit_info(module->name, rhs);
+                // print_bit_info(module->name, rhs);
                 RTLIL::SigBit rhs_sigbit = rhs.as_bit();
                 wire_conn[lhs_wire] = rhs_sigbit;
             } else {
@@ -379,6 +379,7 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
             log("UNEXPECTED OCCATION: LEFT HAND SIDE OF CONNECTION IS NOT WIRE.\n");
         }
     }
+    /*
     // Traverse cells, add to inport_conn and outport_conn
     for (std::pair<RTLIL::IdString, RTLIL::Cell*> c : module->cells_) {
         // input port
@@ -389,7 +390,7 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
             if (c.second->input(port_name)) {
                 // add{ into inport_conn
                 if (sig.is_fully_const() || sig.is_wire()) {
-                    print_cell_bit_info(module->name, c.second->name, sig);
+                    // print_cell_bit_info(module->name, c.second->name, sig);
                     RTLIL::SigBit tmpSigbit = sig.as_bit();
                     inport_conn[{c.second->type, c.second->name, port_name}] = tmpSigbit;
                 } else {
@@ -408,7 +409,9 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
             }
         }
     }
+    */
     // generate cell inport connection dict, same usage as inport conn 
+    // (along with outport connection) 
     for (std::pair<RTLIL::IdString, RTLIL::Cell*> c : module->cells_) {
         dict<RTLIL::IdString, RTLIL::SigSpec> conns = c.second->connections_;
         for (std::pair<RTLIL::IdString, RTLIL::SigSpec> p : conns) {
@@ -416,7 +419,7 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
             RTLIL::SigSpec sig = p.second;
             if (c.second->input(port_name)) {
                 if (sig.is_fully_const() || sig.is_wire()) {
-                    print_cell_bit_info(module->name, c.second->name, sig);
+                    // print_cell_bit_info(module->name, c.second->name, sig);
                     RTLIL::SigBit tmpSigbit = sig.as_bit();
                     cellinport_conn[c.second->name].push_back( {port_name, tmpSigbit} );
                 } else {
@@ -436,15 +439,18 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
         }
     }
 
+
     /*
     // TODO: maybe print three dicts to debug
     */
     print_wire_conn(wire_conn);
     print_outport_conn(outport_conn);
-    print_inport_conn(inport_conn);
+    // print_inport_conn(inport_conn);
     print_cellinport_conn(cellinport_conn);
 
-    /*
+
+
+    
     // use a queue for dfs traversal
     queue<RTLIL::Wire*> wire_queue;
     wire_queue.push(output_wire);
@@ -475,28 +481,18 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
             PortInfo pred_port = outport_conn[*curr_wire];
             if (pred_port != NULL) {
                 // build expr for the cell
-                // Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<RTLIL::PortCorrespond> inputs, std::vector<RTLIL::PortCorrespond> output )
-                
-                // struct PortInfo{
-                //     RTLIL::IdString cell_type;
-                //     RTLIL::IdString cell_id;
-                //     RTLIL::IdString port_name;
-                // };
-                
+
                 RTLIL::IdString tmpCellName = pred_port.cell_type;
                 RTLIL::IdString tmpCellId = pred_port.cell_id;
-                // get input signal pairs
-                // TODO: how to search information of cell with cell id? maybe there are given ways to search cell lib for ports 
-                
-                // generate output signal pair 
+                PortCorrespond outCorr = {pred_port.port_name; curr_wire->as_bit()};
 
-                cell_to_expr(tmpCellName, );
+                cell_to_expr(tmpCellName, cellinport_conn.second, outCorr); // TODO curr_wire into sigbit and cellinport
             } else {
                 log("UNEXPECTED OCCATION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
             }
         }
     }
-    */
+    
     return ModuleExpr(); // TODO: return module expr
 }
 
@@ -515,8 +511,16 @@ void get_simcells_expr() {
 
     // TODO: use Proc and opt pass to process design into what we need
     
+    Pass::call(simcells_lib, "proc");
+    Pass::call(simcells_lib, "opt_expr");
+    Pass::call(simcells_lib, "opt_clean");
+
+    
     log("===================== Print simcells ======================\n");
     print_design(simcells_lib);
+    
+
+
     
 
     /*
@@ -585,6 +589,7 @@ void get_simcells_expr() {
         // simcells_design->modules_[module_pair.first] = new ModuleExpr(tmp_mod_expr);
     }
     */
+    
     
     
         

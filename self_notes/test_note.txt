@@ -1,0 +1,2 @@
+result10_write1_simcell.txt    write wire-port connection information after proc and opt
+
