@@ -46,6 +46,7 @@ void RTLIL_BACKEND::dump_const(std::ostream &f, const RTLIL::Const &data, int wi
 	if (width < 0)
 		width = data.size() - offset;
 	if ((data.flags & RTLIL::CONST_FLAG_STRING) == 0 || width != (int)data.size()) {
+		// deal as bit vector
 		if (width == 32 && autoint) {
 			int32_t val = 0;
 			for (int i = 0; i < width; i++) {
