@@ -280,6 +280,7 @@ Expr elim_const_in_expr(Expr ex) {
 */
 
 // TODO: finish the function
+/*
 bool sigbit_to_bool(RTLIL::SigBit sig) {
     bool ret;
     if (data.flags) {
@@ -288,6 +289,7 @@ bool sigbit_to_bool(RTLIL::SigBit sig) {
     }
     return ret;
 }
+    */
 
 
 Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> inputs, std::vector<PortCorrespond> output ) { // Add a vector of input signals, and output signal,
@@ -311,9 +313,8 @@ Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> 
             else {
                 // get bool value from sig. presumably it is a const
                 // TODO: finish the case 
-                HwExpr rhs_var = constant();
             }
-            ret = subst() 
+            
             break;
         case "$pos" :
             break;
@@ -495,7 +496,7 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
 
 
 
-    
+
     // use a queue for dfs traversal
     queue<RTLIL::Wire*> wire_queue;
     wire_queue.push(output_wire);
