@@ -1,2 +1,5 @@
 result10_write1_simcell.txt    write wire-port connection information after proc and opt
 
+result11_write1_simcell.txt		write simcell lib RTLIL IR form after `proc` and `opt` passes
+
+
