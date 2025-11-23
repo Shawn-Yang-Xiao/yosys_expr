@@ -9,6 +9,8 @@
 #include <cstring>
 #include <vector>
 #include <queue>
+#include <iostream>
+#include <sstream>
 
 #include "kernel/yosys.h"
 #include "kernel/rtlil.h"
@@ -33,7 +35,46 @@ PRIVATE_NAMESPACE_BEGIN
 // initialize variables
 bool noglitch;
 
-// 
+// print structs defined in mv_backend.h
+
+void dump_hwvar(std::ostream& f, HwVar hv) {
+    if (hv.kind == HwVar::VarKind::WIRE) {
+        f << stringf("wire %s", hv.wire_name);
+    }
+    else {
+        // CONST
+        if (hv.const_val) {
+            f << stringf("true");
+        }
+        else {
+            f << stringf("false");
+        }
+    }
+}
+
+void dump_operator(std::ostream& f, Operator op) {
+    if (op == Operator::ADD) {
+        f << stringf("+");
+    }
+    else if (op == Operator::MUL) {
+        f << stringf("*");
+    }
+    else if (op == Operator::NEG) {
+        f << stringf("~");
+    }
+    else {
+        // Operator::OTHER
+        f << stringf("OTHER OPERATOR");
+    }
+}
+
+
+void dump_hwexpr
+// TODO: print methods for structs defined in mv_backend.h
+
+
+
+// print RTLIL structs
 
 void print_const(RTLIL::Const data, int width, int offset) {
     if (width < 0) {
@@ -115,7 +156,7 @@ void print_sigchunk(const RTLIL::SigChunk chunk){
         }
         else {
             // multi bit signal
-            log("PRINT A MULTI-BIT SIGNAL, CURRENTLY NOT SOLVED, KEEP MONITORING.");
+            log("PRINT A MULTI-BIT SIGNAL, CURRENTLY NOT DEALED, KEEP MONITORING.");
         }
     }
     log("  Width %d ", chunk.width);
@@ -272,10 +313,8 @@ struct PortCorrespond{
 };
 
 /*
-Expr elim_const_in_expr(Expr ex) {
+HwExpr elim_const_in_expr(HwExpr ex) {
     // if there is a const in expr, transform biop into uniop
-    Expr ret;
-
 }
 */
 
@@ -289,39 +328,85 @@ bool sigbit_to_bool(RTLIL::SigBit sig) {
     }
     return ret;
 }
-    */
+*/
 
 
-Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> inputs, std::vector<PortCorrespond> output ) { // Add a vector of input signals, and output signal,
+HwInstruction cell_to_instruction(RTLIL::IdString cell_type, std::vector<PortCorrespond> inputs, PortCorrespond output ) { // Add a vector of input signals, and output signal,
     // generate an instruction from the expr
-    Instruction ret;
+    HwInstruction ret;
     std::string cell_type_name = cell_type.c_str();
-    std::string lhs_name = output.sig->wire.name.c_str();
+    std::string lhs_name = output.sig.wire->name.c_str();
     // fetch input signals
 
 
-    switch (cell_type_name)
-        case "$not" : 
-            HwVar tmpLhs = wire(lhs_name);
-            PortCorrespond input_corr = *inputs.begin();
-            // if input port connects to a bit wire
-            if (input_corr.sig.is_wire()) {
-                HwExpr rhs_var = var( wire(sig->wire.name) );
-                HwExpr unary(Operator::ADD, &rhs_var);
+    if (cell_type == ID($not)) {    // line 48
+        HwVar tmpLhs = HwVar::make_wire(lhs_name);
+        PortCorrespond input_corr = *inputs.begin();
+        HwExpr tmpRhs;
+        // if input port connects to a bit wire
+        if (input_corr.sig.is_wire()) {
+            HwExpr rhs_var = HwExpr::make_var( HwVar::make_wire(input_corr.sig.wire->name.c_str()) );
+            tmpRhs = HwExpr::make_unary(Operator::NEG, &rhs_var);
+        }
+        // if input port connects to a bool const
+        else {
+            // get bool value from sig. presumably it is a const
+            if (input_corr.sig.data == RTLIL::S0) {
+                HwExpr rhs_var = HwExpr::make_var( HwVar::make_const(false) );
+                tmpRhs = HwExpr::make_unary(Operator::NEG, &rhs_var);
             }
-            // if input port connects to a bool const
+            else if (input_corr.sig.data == RTLIL::S1) {
+                HwExpr rhs_var = HwExpr::make_var( HwVar::make_const(true) );
+                tmpRhs = HwExpr::make_unary(Operator::NEG, &rhs_var);
+            }
             else {
-                // get bool value from sig. presumably it is a const
-                // TODO: finish the case 
+                log("UNEXPECTED OCCASION: CONST BIT NOT TRUE OR FALSE.\n");
             }
-            
-            break;
-        case "$pos" :
-            break;
-        case "$neg" :
-            break;
-        default:
-            log("UNEXPECTED OCCASION: CELL %s IN MODULE.\n", cell_type_name);
+        }
+        ret = HwInstruction::make_subst(tmpLhs, tmpRhs);
+    }
+    else if (cell_type == ID($pos)) {   // line 76
+        HwVar tmpLhs = HwVar::make_wire(lhs_name);
+        PortCorrespond input_corr = *inputs.begin();
+        HwExpr tmpRhs;
+        if (input_corr.sig.is_wire()) {
+            tmpRhs = HwExpr::make_var( HwVar::make_wire(input_corr.sig.wire->name.c_str()) );
+        }
+        else {
+            if (input_corr.sig.data == RTLIL::S0) {
+                tmpRhs = HwExpr::make_var( HwVar::make_const(false) );
+            }
+            else if (input_corr.sig.data == RTLIL::S1) {
+                tmpRhs = HwExpr::make_var( HwVar::make_const(true) );
+            }
+            else {
+                log("UNEXPECTED OCCASION: CONST BIT NOT TRUE OR FALSE.\n");
+            }
+        }
+        ret = HwInstruction::make_subst(tmpLhs, tmpRhs);
+    }
+    else if (cell_type == ID($buf)) {
+        HwVar tmpLhs = HwVar::make_wire(lhs_name);
+        PortCorrespond input_corr = *inputs.begin();
+        HwExpr tmpRhs;
+        if (input_corr.sig.is_wire()) {
+            tmpRhs = HwExpr::make_var( HwVar::make_wire(input_corr.sig.wire->name.c_str()) );
+        }
+        else {
+            if (input_corr.sig.data == RTLIL::S0) {
+                tmpRhs = HwExpr::make_var( HwVar::make_const(false) );
+            }
+            else if (input_corr.sig.data == RTLIL::S1) {
+                tmpRhs = HwExpr::make_var( HwVar::make_const(true) );
+            }
+            else {
+                log("UNEXPECTED OCCASION: CONST BIT NOT TRUE OR FALSE.\n");
+            }
+        }
+    }
+    else {
+        log("UNEXPECTED OCCASION: CELL %s IN MODULE.\n", cell_type_name);
+    }
     
     return ret;
 }
@@ -374,28 +459,40 @@ Instruction cell_to_expr(RTLIL::IdString cell_type, std::vector<PortCorrespond> 
         }
     }
 
-ModuleExpr module_to_expr(const RTLIL::Module *module) {
+
+
+HwCellDef module_to_celldef(const RTLIL::Module *module) {
     // transform basic module definition into expression form
     // this transformation is used for simcell lib modules
     // so there can be multiple bit signals
 
-    std::vector<Instruction> insts; // store instructions in the module, generate in reversed order
+    std::string module_name = module->name.c_str(); // module name, needed in HwCellDef
+
+    std::vector<HwInstruction> insts; // store instructions in the module, generate in reversed order
 
     // first collect wires, find input and output wires
-    std::vector<RTLIL::IdString> input_wires;
-    RTLIL::IdString output_wire;
+    std::vector<RTLIL::IdString> input_wires;   
+    RTLIL::IdString output_wire_name;
     std::vector<RTLIL::IdString> inner_wires;
 
     for (std::pair<RTLIL::IdString, RTLIL::Wire*> w : module->wires_) {
         if (w.second->port_input == true) {
             input_wires.push_back(w.first);
         } else if (w.second->port_output == true) {
-            output_wire = w.first;
+            output_wire_name = w.first;
         }
         else {
             inner_wires.push_back(w.first); // neither input wires nor output wire
         }
     }
+
+    // store collected inputs and output into cell definition structure
+    std::vector<std::string> input_wire_names_str;
+    for (RTLIL::IdString iw : input_wires) {
+        input_wire_names_str.push_back(iw.c_str()); 
+    }
+
+
     // Traverse connection to link input and output wires
     // wire/const -- wire, wire_conn[wire] = wire/const
     dict<RTLIL::Wire*, RTLIL::SigBit> wire_conn;
@@ -489,57 +586,86 @@ ModuleExpr module_to_expr(const RTLIL::Module *module) {
     /*
     // TODO: maybe print three dicts to debug
     */
-    print_wire_conn(wire_conn);
-    print_outport_conn(outport_conn);
+    // print_wire_conn(wire_conn);
+    // print_outport_conn(outport_conn);
     // print_inport_conn(inport_conn);
-    print_cellinport_conn(cellinport_conn);
-
-
+    // print_cellinport_conn(cellinport_conn);
 
 
     // use a queue for dfs traversal
-    queue<RTLIL::Wire*> wire_queue;
-    wire_queue.push(output_wire);
+    std::queue<RTLIL::IdString> wire_queue;
+    wire_queue.push(output_wire_name);
     // first traverse wire_conn and outport_conn to build exprs for output ports
     // if is outport_conn, then build expr for the cell
     while (wire_queue.empty() == false) {
-        RTLIL::Wire *curr_wire = wire_queue.front();
+        RTLIL::IdString curr_wire = wire_queue.front();
         wire_queue.pop();
         // search curr_wire in wire_conn
         RTLIL::SigBit pred_sigbit = wire_conn[*curr_wire];
+        HwInstruction tmpInst;
         if (pred_sigbit != NULL) {
-            // pred_sigbit is wire/const
+            // if there is a previous wire or const connecting to curr_wire
+            // generate a HwInstruction of assign
+            HwExpr rhsExpr;
             if (pred_sigbit.is_wire()) {
                 RTLIL::Wire *pred_wire = pred_sigbit.wire;
-                wire_queue.push(pred_wire);
+                // add previous wire into the queue, process later
+                wire_queue.push(pred_wire->name); 
                 // TODO: generate instruction of wire assignment from pred_wire to curr_wire
                 // then add to insts
+                rhsExpr = make_var(make_wire(pred_wire->name.c_str()));
                 
-
-            } else if (pred_sigbit.is_fully_const()) {
-                RTLIL::Const pred_const = pred_sigbit.as_const();
-
             } else {
-                log("UNEXPECTED OCCATION: PREDECESSOR SIGBIT IS NEITHER WIRE NOR CONST.\n");
+                RTLIL::State pred_const = pred_sigbit.data;
+                HwVar tmpRhv;
+                if (pred_const == RTLIL::State::S0) {
+                    tmpRhv = make_const(false);
+                    rhsExpr = make_var(tmpRhv);
+                }
+                else if (pred_const == RTLIL::State::S1) {
+                    tmpRhv = make_const(true);
+                    rhsExpr = make_var(tmpRhv);
+                }
+                else {
+                    log("UNEXPECTED OCCATION: CONST BIT NOT TRUE OR FALSE.\n");
+                }
+                
             }
+            tmpInst = make_subst( InstrKind::IK_subst, make_wire(curr_wire.c_str()), rhsExpr );
+            insts.push_back(tmpInst);
         } else {
             // pred_sigbit is NULL, so pred is not in wire queue, search if it is in outport conn
             PortInfo pred_port = outport_conn[*curr_wire];
             if (pred_port != NULL) {
-                // build expr for the cell
+                // if current wire connects to a cell
+                // generate a HwInstruction of the cell 
 
-                RTLIL::IdString tmpCellName = pred_port.cell_type;
+                RTLIL::IdString tmpCellType = pred_port.cell_type;
                 RTLIL::IdString tmpCellId = pred_port.cell_id;
                 PortCorrespond outCorr = {pred_port.port_name; curr_wire->as_bit()};
 
-                cell_to_expr(tmpCellName, cellinport_conn.second, outCorr); // TODO curr_wire into sigbit and cellinport
+                tmpInst = cell_to_instruction(tmpCellType, cellinport_conn.second, outCorr); // TODO curr_wire into sigbit and cellinport
+
+                // add wires connecting to input ports into the queue
+                for (std::pair<RTLIL::IdString, RTLIL::SigBit> connect_pair : cellinport_conn[tmpCellType]) {
+                    if (connect_pair.second.is_wire()) {
+                        wire_queue.push(connect_pair.second.wire->name);
+                    }
+                }
+
             } else {
-                log("UNEXPECTED OCCATION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
+                // if wire has no predecessor, which means that it is input port of the cell module, that will fall into this occation.
+                // log("UNEXPECTED OCCATION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
             }
+            insts.push_back(tmpInst);
         }
     }
     
-    return ModuleExpr(); // TODO: return module expr
+    HwCellDef ret = HwCellDef(module_name, input_wire_names_str, output_wire_name.c_str(), ); 
+    // TODO: need instructions as the final parameter
+
+    
+    return ret; // TODO: return module expr
 }
 
 
@@ -561,80 +687,22 @@ void get_simcells_expr() {
     Pass::call(simcells_lib, "opt_expr");
     Pass::call(simcells_lib, "opt_clean");
 
-    
+    /*
     log("===================== Print simcells ======================\n");
     print_design(simcells_lib);
-    
+    */    
 
-
-    
-
-    /*
-    // print the design 
-    log("===================== Print simcells ======================\n");
-    dict<RTLIL::IdString, RTLIL::Module*> modules_of_simcells = simcells_lib->modules_;
-    for(std::pair<const RTLIL::IdString, RTLIL::Module*>module_pair : modules_of_simcells) {
-        log("Module name: %s.\n", module_pair.first.c_str()); // print module name
-        dict<RTLIL::IdString, RTLIL::Wire *> wires_of_module = module_pair.second->wires_;
-        dict<RTLIL::IdString, RTLIL::Cell *> cells_of_module = module_pair.second->cells_;
-        std::vector<RTLIL::SigSig> connections_of_module = module_pair.second->connections_;
-        // definition of RTLIL::SigSig:	typedef std::pair<SigSpec, SigSpec> SigSig;
-        // print wires_ in each module
-        log("  Wires:\n");
-        for(std::pair<const RTLIL::IdString, RTLIL::Wire *>wire_pair : wires_of_module) {
-            log("    %s\n", wire_pair.first.c_str());
-        }
-        // print connections_ in each module
-        log("  Connections:\n");
-        for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_pair : connections_of_module) {
-            // print .first 
-            log("    first:");
-            std::string s1 = conn_pair.first.as_string();
-            log(" %s\n", s1);
-            // print .second
-            log("    second:");
-            std::string s2 = conn_pair.second.as_string();
-            log(" %s\n", s2);
-        }
-        // print cells_ in each module
-        log("  Cells:\n");
-        for(std::pair<const RTLIL::IdString, RTLIL::Cell *>cell_pair : cells_of_module) {
-            // print cell name and cell type
-            log("    cell %s, type %s\n", cell_pair.second->name.c_str(), cell_pair.second->type.c_str());
-            // print cell connections
-            dict<RTLIL::IdString, RTLIL::SigSpec> conn_of_cell = cell_pair.second->connections_;
-            for(std::pair<RTLIL::IdString, RTLIL::SigSpec> conn_pair : conn_of_cell) {
-                // print port name and sigspec
-                log("      port %s: sigspec ", conn_pair.first.c_str());
-                RTLIL::SigSpec sig = conn_pair.second;
-                log("%s", sig.as_string());
-            }
-            log("\n");
-            // print cell parameters 
-            for(std::pair<RTLIL::IdString, RTLIL::Const> param_pair : cell_pair.second->parameters) {
-                log("      parameter %s: ", param_pair.first.c_str());
-                RTLIL::Const param = param_pair.second;
-                std::vector<RTLIL::State> param_bits = param.to_bits();
-                for(RTLIL::State b : param_bits) {
-                    log("%d ", (int)b);
-                }
-                log("\n");
-            }
-
-        }
-    }
-    log("=========================================================\n");
-    */
     
     // DesignExpr *simcells_design = new DesignExpr; 
 
     // transform into expr formation 
-    /*
+    
     for(std::pair<const RTLIL::IdString, RTLIL::Module*>module_pair : simcells_lib->modules_) {
-        ModuleExpr tmp_mod_expr =  module_to_expr(module_pair.second);
+        HwCellDef tmp_mod_expr =  module_to_celldef(module_pair.second);
+        // design print method of HwCellDef
         // simcells_design->modules_[module_pair.first] = new ModuleExpr(tmp_mod_expr);
     }
-    */
+    
     
     
     

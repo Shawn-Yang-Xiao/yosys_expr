@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <cassert>
 
 
 #include "kernel/rtlil.h"
@@ -26,7 +27,7 @@ struct HwVar {
     explicit HwVar(bool b) : kind(CONST), const_val(b) { };
 
     static HwVar make_wire(const std::string &name) { return HwVar(name); }
-    static HwVar make_constant(bool val) { return HwVar(val); }
+    static HwVar make_const(bool val) { return HwVar(val); }
 };
 
 
@@ -116,14 +117,14 @@ struct HwInstruction {
     // manually remove duplicates before assignment
     // for mcall
     std::string callee_module;
-    std::vector< std::pair<std::string, std::HwExpr> > port_bindings;
+    std::vector< std::pair<std::string, HwExpr> > port_bindings;
 
     HwInstruction() : kind(InstrKind::IK_subst), lhs(), rhs() {}
 
-    explicit HwInstruction(InstrKind ik, HwVar lhv, HwExpr rhe, std::string lkn, std::vector<HwExpr> lkes, std:string cem, std::vector< std::pair<std::string, std::HwExpr> > pbs) : kind(ik), lhs(lhv), rhs(rhe), leak_name(lkn), leak_exprs(lkes) callee_module(cem), port_bindings(pbs) { };
+    explicit HwInstruction(InstrKind ik, HwVar lhv, HwExpr rhe, std::string lkn, std::vector<HwExpr> lkes, std::string cem, std::vector< std::pair<std::string, HwExpr> > pbs) : kind(ik), lhs(lhv), rhs(rhe), leak_name(lkn), leak_exprs(lkes), callee_module(cem), port_bindings(pbs) { };
 
-    static HwInstruction subst(const HwVar& lhs, const HwExpr& rhs){
-        assert(lhs.kind == VarKind::WIRE);
+    static HwInstruction make_subst(const HwVar& lhs, const HwExpr& rhs){
+        assert(lhs.kind == HwVar::VarKind::WIRE);
         return HwInstruction {
             InstrKind::IK_subst,
             lhs,
@@ -135,8 +136,8 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction glitch(const HwVar& lhs, const HwExpr& rhs) {
-        assert(lhs.kind == VarKind::WIRE);
+    static HwInstruction make_glitch(const HwVar& lhs, const HwExpr& rhs) {
+        assert(lhs.kind == HwVar::VarKind::WIRE);
         return HwInstruction {
             InstrKind::IK_glitch,
             lhs,
@@ -148,7 +149,7 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction leak(const std::string& str, const std::vector<Expr> expr_vec) {
+    static HwInstruction make_leak(const std::string& str, const std::vector<HwExpr> expr_vec) {
         return HwInstruction{
             InstrKind::IK_leak,
             {},
@@ -160,7 +161,7 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction mcall(cosnt std::string& mod_name, std::vector< std::pair<std::string, HwExpr> > bindings) {
+    static HwInstruction make_mcall(const std::string& mod_name, std::vector< std::pair<std::string, HwExpr> > bindings) {
         return HwInstruction {
             InstrKind::IK_mcall,
             {},
@@ -181,7 +182,16 @@ struct HwCellDef {
     std::vector<std::string> inputs;
     std::string output;
     std::vector<HwInstruction> instructions; 
+
+    HwCellDef() : cell_type(""), inputs({}), output(""), instructions({}) { }
+
+    explicit HwCellDef(std::string ct, std::vector<std::string> ins, std::string out, std::vector<HwInstruction> insts) : cell_type(ct), inputs(ins), output(out), instructions(insts) { };
+    
+    // construction methods
 };
+
+
+const pool<string> mv_keywords();
 
 } // namespace MV_BACKEND
 
