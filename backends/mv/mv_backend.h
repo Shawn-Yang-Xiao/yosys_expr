@@ -32,8 +32,8 @@ struct HwVar {
 
 
 enum class Operator {
-    ADD,
-    MUL,
+    ADD,    // bit xor
+    MUL,    // bit and
     NEG,
     OTHER
 };
@@ -46,7 +46,7 @@ struct HwExpr {
         OP2,
         OPN
     } type;
-    std::vector<HwExpr*> args;  // valid when type != VAR
+    std::vector<HwExpr> args;   // valid when type != VAR
     Operator op;                // valid when type != VAR
     HwVar var;                  // valid when type == VAR 
 
@@ -54,7 +54,7 @@ struct HwExpr {
     // Is default construction method needed?
     HwExpr() : type(ExprType::VAR), op(Operator{}), var() { }
 
-    explicit HwExpr(ExprType et, std::vector<HwExpr*> exprVec, Operator op, HwVar hv) : type(et), args(exprVec), op(op), var(hv) { };
+    explicit HwExpr(ExprType et, std::vector<HwExpr> exprVec, Operator op, HwVar hv) : type(et), args(exprVec), op(op), var(hv) { };
 
     static HwExpr make_var(const HwVar& v) {
         return HwExpr{
@@ -65,7 +65,7 @@ struct HwExpr {
         };
     }
 
-    static HwExpr make_unary(Operator op, HwExpr* a) {
+    static HwExpr make_unary(Operator op, HwExpr a) {
         return HwExpr {
             ExprType::OP1,
             {a},
@@ -74,7 +74,7 @@ struct HwExpr {
         };
     }
 
-    static HwExpr make_binary(Operator op, HwExpr* a, HwExpr* b) {
+    static HwExpr make_binary(Operator op, HwExpr a, HwExpr b) {
         return HwExpr {
             ExprType::OP2,
             {a, b},
@@ -83,7 +83,7 @@ struct HwExpr {
         };
     }
 
-    static HwExpr make_nary(Operator op, std::vector<HwExpr*> operands) {
+    static HwExpr make_nary(Operator op, std::vector<HwExpr> operands) {
         return HwExpr {
             ExprType::OPN,
             std::move(operands),
@@ -117,11 +117,11 @@ struct HwInstruction {
     // manually remove duplicates before assignment
     // for mcall
     std::string callee_module;
-    std::vector< std::pair<std::string, HwExpr> > port_bindings;
+    std::vector< std::pair<std::string, HwVar> > port_bindings;
 
     HwInstruction() : kind(InstrKind::IK_subst), lhs(), rhs() {}
 
-    explicit HwInstruction(InstrKind ik, HwVar lhv, HwExpr rhe, std::string lkn, std::vector<HwExpr> lkes, std::string cem, std::vector< std::pair<std::string, HwExpr> > pbs) : kind(ik), lhs(lhv), rhs(rhe), leak_name(lkn), leak_exprs(lkes), callee_module(cem), port_bindings(pbs) { };
+    explicit HwInstruction(InstrKind ik, HwVar lhv, HwExpr rhe, std::string lkn, std::vector<HwExpr> lkes, std::string cem, std::vector< std::pair<std::string, HwVar> > pbs) : kind(ik), lhs(lhv), rhs(rhe), leak_name(lkn), leak_exprs(lkes), callee_module(cem), port_bindings(pbs) { };
 
     static HwInstruction make_subst(const HwVar& lhs, const HwExpr& rhs){
         assert(lhs.kind == HwVar::VarKind::WIRE);
@@ -161,7 +161,7 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction make_mcall(const std::string& mod_name, std::vector< std::pair<std::string, HwExpr> > bindings) {
+    static HwInstruction make_mcall(const std::string& mod_name, std::vector< std::pair<std::string, HwVar> > bindings) {
         return HwInstruction {
             InstrKind::IK_mcall,
             {},
@@ -188,6 +188,15 @@ struct HwCellDef {
     explicit HwCellDef(std::string ct, std::vector<std::string> ins, std::string out, std::vector<HwInstruction> insts) : cell_type(ct), inputs(ins), output(out), instructions(insts) { };
     
     // construction methods
+    static HwCellDef make_cell(std::string ct, std::vector<std::string> ins, std::string out, std::vector<HwInstruction> insts) {
+        return HwCellDef {
+            ct,
+            std::move(ins),
+            out,
+            std::move(insts)
+        };
+    }
+
 };
 
 
