@@ -53,6 +53,7 @@ void dump_hwvar(std::ostream& f, HwVar hv) {
     }
 }
 
+
 void dump_operator(std::ostream& f, Operator op) {
     if (op == Operator::ADD) {
         f << stringf("+");
@@ -173,6 +174,7 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
         f << stringf("; ");
     }
 }
+
 
 void dump_hwcelldef(std::ostream& f, HwCellDef hcd) {
     f << stringf("cell type %s:\n", hcd.cell_type);
@@ -321,11 +323,13 @@ void print_bit_info(RTLIL::IdString module_name, RTLIL::SigSpec sig) {
     log("\n");
 }
 
+
 void print_cell_bit_info(RTLIL::IdString module_name, RTLIL::IdString cell_name, RTLIL::SigSpec sig) {
     log("In module %s, cell %s, SigSpec info: ", module_name.c_str(), cell_name.c_str());
     print_sigspec(sig);
     log("\n");
 }
+
 
 void print_conn(RTLIL::SigSpec left, RTLIL::SigSpec right) {
     log("    connect " );
@@ -443,6 +447,7 @@ struct PortInfo{
         return h;
     }
 };
+
 
 struct PortCorrespond{
     RTLIL::IdString port_name;
@@ -662,6 +667,27 @@ HwInstruction cell_to_instruction(RTLIL::IdString cell_type, std::vector<PortCor
         tmpRhs = HwExpr::make_binary(Operator::ADD, rhsExpr1, rhsExpr2);
         ret = HwInstruction::make_subst(tmpLhs, tmpRhs);
     }
+    else if (cell_type == ID($xnor)) {
+        HwVar tmpLhs = HwVar::make_wire(lhs_name);
+        auto it = inputs.begin();
+        PortCorrespond op1_corr = *it;
+        it++;
+        PortCorrespond op2_corr = *it;
+        HwExpr rhsExpr1, rhsExpr2;
+        HwExpr tmpRhs;
+        if (op1_corr.sig.is_wire()) {
+            rhsExpr1 = HwExpr::make_var( HwVar::make_wire(op1_corr.sig.wire->name.c_str()) );
+        }
+        else {
+            if (op1_corr.sig.data == RTLIL::S0) {
+                rhsExpr1 = HwExpr::make_var( HwVar::make_const(false) );
+            }
+            else if (op1_corr.sig.data == RTLIL::S1) {
+                rhsExpr1 = HwExpr::make_var( HwVar::make_const(true) );
+            }
+        }
+        // TODO: finish this case
+    }
     else {
         log("UNEXPECTED OCCASION: CELL %s IN MODULE.\n", cell_type_name);
     }
@@ -670,51 +696,54 @@ HwInstruction cell_to_instruction(RTLIL::IdString cell_type, std::vector<PortCor
 
 
 
-    void print_wire_conn(dict<RTLIL::Wire*, RTLIL::SigBit> wire_conn) {
-        log("Print wire connection:\n");
-        for (std::pair<RTLIL::Wire*, RTLIL::SigBit> wc_pair : wire_conn) {
-            log("  wire %s connected to sig ", wc_pair.first->name.c_str());
-            print_sigspec(RTLIL::SigSpec(wc_pair.second));
+void print_wire_conn(dict<RTLIL::Wire*, RTLIL::SigBit> wire_conn) {
+    log("Print wire connection:\n");
+    for (std::pair<RTLIL::Wire*, RTLIL::SigBit> wc_pair : wire_conn) {
+        log("  wire %s connected to sig ", wc_pair.first->name.c_str());
+        print_sigspec(RTLIL::SigSpec(wc_pair.second));
+        log("\n");
+    }
+}
+
+
+void print_outport_conn(dict<RTLIL::Wire*, PortInfo> outport_conn) {
+    log("Print outport connection:\n");
+    for (std::pair<RTLIL::Wire*, PortInfo> opc_pair : outport_conn) {
+        log("  wire %s connected to port %s of cell %s of type %s\n", 
+            opc_pair.first->name.c_str(),
+            opc_pair.second.port_name.c_str(),
+            opc_pair.second.cell_id.c_str(),
+            opc_pair.second.cell_type.c_str()
+        );
+    }
+}
+
+
+void print_inport_conn(dict<PortInfo, RTLIL::SigBit> inport_conn) {
+    log("Print inport connection:\n");
+    for (std::pair<PortInfo, RTLIL::SigBit> ipc_pair : inport_conn) {
+        log("  port %s of cell %s of type %s connected to sig ", 
+            ipc_pair.first.port_name.c_str(),
+            ipc_pair.first.cell_id.c_str(),
+            ipc_pair.first.cell_type.c_str()
+        );
+        print_sigspec(RTLIL::SigSpec(ipc_pair.second));
+        log("\n");
+    }
+}
+
+
+void print_cellinport_conn(dict<RTLIL::IdString, std::vector< std::pair<RTLIL::IdString, RTLIL::SigBit> > > cellinport_conn) {
+    log("Print cell inport connection:\n");
+    for (std::pair<RTLIL::IdString, std::vector< std::pair<RTLIL::IdString, RTLIL::SigBit> > > cic_pair : cellinport_conn) {
+        log("  cell %s inport connections:\n", cic_pair.first.c_str());
+        for (std::pair<RTLIL::IdString, RTLIL::SigBit> port_sig : cic_pair.second) {
+            log("    port %s connected to sig ", port_sig.first.c_str());
+            print_sigspec(RTLIL::SigSpec(port_sig.second));
             log("\n");
         }
     }
-
-    void print_outport_conn(dict<RTLIL::Wire*, PortInfo> outport_conn) {
-        log("Print outport connection:\n");
-        for (std::pair<RTLIL::Wire*, PortInfo> opc_pair : outport_conn) {
-            log("  wire %s connected to port %s of cell %s of type %s\n", 
-                opc_pair.first->name.c_str(),
-                opc_pair.second.port_name.c_str(),
-                opc_pair.second.cell_id.c_str(),
-                opc_pair.second.cell_type.c_str()
-            );
-        }
-    }
-
-    void print_inport_conn(dict<PortInfo, RTLIL::SigBit> inport_conn) {
-        log("Print inport connection:\n");
-        for (std::pair<PortInfo, RTLIL::SigBit> ipc_pair : inport_conn) {
-            log("  port %s of cell %s of type %s connected to sig ", 
-                ipc_pair.first.port_name.c_str(),
-                ipc_pair.first.cell_id.c_str(),
-                ipc_pair.first.cell_type.c_str()
-            );
-            print_sigspec(RTLIL::SigSpec(ipc_pair.second));
-            log("\n");
-        }
-    }
-
-    void print_cellinport_conn(dict<RTLIL::IdString, std::vector< std::pair<RTLIL::IdString, RTLIL::SigBit> > > cellinport_conn) {
-        log("Print cell inport connection:\n");
-        for (std::pair<RTLIL::IdString, std::vector< std::pair<RTLIL::IdString, RTLIL::SigBit> > > cic_pair : cellinport_conn) {
-            log("  cell %s inport connections:\n", cic_pair.first.c_str());
-            for (std::pair<RTLIL::IdString, RTLIL::SigBit> port_sig : cic_pair.second) {
-                log("    port %s connected to sig ", port_sig.first.c_str());
-                print_sigspec(RTLIL::SigSpec(port_sig.second));
-                log("\n");
-            }
-        }
-    }
+}
 
 
 
@@ -947,27 +976,27 @@ void get_simcells_expr() {
 
     // TODO: use Proc and opt pass to process design into what we need
     
-    Pass::call(simcells_lib, "proc");
+    Pass::call(simcells_lib, "proc -nomux");
     Pass::call(simcells_lib, "opt_expr");
     Pass::call(simcells_lib, "opt_clean");
 
-    /*
+    
     log("===================== Print simcells ======================\n");
     print_design(simcells_lib);
-    */    
+        
 
     
     // DesignExpr *simcells_design = new DesignExpr; 
 
     // transform into expr formation 
-    
+    /*
     for(std::pair<const RTLIL::IdString, RTLIL::Module*>module_pair : simcells_lib->modules_) {
         HwCellDef tmp_mod_expr =  module_to_celldef(module_pair.second);
         log("%s\n", hwcelldef_to_string(tmp_mod_expr));
         // design print method of HwCellDef
         // simcells_design->modules_[module_pair.first] = new ModuleExpr(tmp_mod_expr);
     }
-    
+    */
     
     
     
