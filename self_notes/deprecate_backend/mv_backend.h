@@ -19,16 +19,14 @@ namespace MV_BACKEND {
 struct HwVar {
     enum VarKind { WIRE, CONST } kind;
     std::string wire_name;      // if kind == WIRE
-    bool with_offset = false;
-    int offset;
     bool const_val = false;     // if kind == CONST
 
     HwVar() : kind(CONST), const_val(false) { }
 
-    explicit HwVar(const std::string &w, int i) : kind(WIRE), wire_name(w), offset(i) { };
+    explicit HwVar(const std::string &w) : kind(WIRE), wire_name(w) { };
     explicit HwVar(bool b) : kind(CONST), const_val(b) { };
 
-    static HwVar make_wire(const std::string &name, int i) { return HwVar(name, i); }
+    static HwVar make_wire(const std::string &name) { return HwVar(name); }
     static HwVar make_const(bool val) { return HwVar(val); }
 };
 
@@ -207,36 +205,13 @@ struct MultiBitSignal {
     int width;
     int start_offset;
     bool upto;
-    bool input_port = false;
-    bool output_port = false;
+    bool input_port;
+    bool output_port;
 
 
-    MultiBitSignal() : signal_name(""), width(0), start_offset(0), upto(false), input_port(false), output_port(false) {};
-
-    explicit MultiBitSignal(std::string sn, int w, int so, bool u, bool ip, bool op) : signal_name(sn), width(w), start_offset(so), upto(u), input_port(ip), output_port(op) { };
-
-    static MultiBitSignal make_onebit(std::string sn, bool ip, bool op) {
-        return MultiBitSignal {
-            sn,
-            1,
-            0,
-            false,
-            ip,
-            op
-        };
-    }
-
-    static MultiBitSignal make_multibit(std::string sn, int w, int so, bool u, bool ip, bool op) {
-        return MultiBitSignal {
-            sn,
-            w,
-            so,
-            u,
-            ip,
-            op
-        };
-    }
+    MultiBitSignal() : {};
 };
+
 
 
 struct HwModuleDef {
@@ -246,20 +221,8 @@ struct HwModuleDef {
     // maybe there are public and other signals
     std::vector<HwInstruction> instructions;
 
-    HwModuleDef() : module_name(""), inputs({}), outputs({}), instructions({}) { };
-
-    explicit HwModuleDef(std::string mn, std::vector<MultiBitSignal> ins, std::vector<MultiBitSignal> outs, std::vector<HwInstruction> insts) : module_name(mn), inputs(ins), outputs(outs), instructions(insts) { };
-
-    static HwModuleDef make_module(std::string mn, std::vector<MultiBitSignal> ins, std::vector<MultiBitSignal> outs, std::vector<HwInstruction> insts) {
-        return HwModuleDef {
-            mn,
-            std::move(ins),
-            std::move(outs),
-            std::move(insts)
-        };
-    }
+    
 };
-
 
 const pool<string> mv_keywords();
 

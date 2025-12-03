@@ -40,11 +40,7 @@ bool noglitch;
 
 void dump_hwvar(std::ostream& f, HwVar hv) {
     if (hv.kind == HwVar::VarKind::WIRE) {
-        // WIRE
         f << stringf("wire %s", hv.wire_name);
-        if (hv.with_offset) {
-            f << stringf(" [%d]", hv.offset);
-        }
     }
     else {
         // CONST
@@ -202,57 +198,7 @@ void dump_hwcelldef(std::ostream& f, HwCellDef hcd) {
     }
     f << stringf("    }\n\n");
 }
-
-
-void dump_multibitsignal(std::ostream& f, MultiBitSignal mbs) {
-    f << stringf("signal name %s, width %d, start offset %d", mbs.signal_name, mbs.width, mbs.start_offset);
-    if (mbs.upto) {
-        f << stringf(", upto");
-    }
-    else {
-        f << stringf(", downto");
-    }
-    if (mbs.input_port) {
-        f << stringf(", input port");
-    }
-    if (mbs.output_port) {
-        f << stringf(", output port");
-    }
-    f << stringf("\n");
-}
-
-
-void dump_hwmoduledef(std::ostream& f, HwModuleDef hmd) {
-    f << stringf("module name %s: \n", hmd.module_name);
-    // print inputs
-    f << stringf("  inputs: ");
-    for (auto it = hmd.inputs.begin(); it != hmd.inputs.end(); it++) {
-        if (it != hmd.inputs.begin()) {
-            f << stringf(", ");
-        }
-        dump_multibitsignal(f, *it);
-    }
-    // print outputs
-    f << stringf("  outputs: ");
-    for (auto it = hmd.outputs.begin(); it != hmd.outputs.end(); it++) {
-        if (it != hmd.outputs.begin()) {
-            f << stringf(", ");
-        }
-        dump_multibitsignal(f, *it);
-    }
-    // print instructions
-    f << stringf("  instructions: \n");
-    for( auto it = hmd.instructions.begin(); it != hmd.instructions.end(); it++) {
-        f << stringf("    ");
-        dump_hwinstruction(f, *it);
-        f << stringf("\n");
-    }
-
-    f << stringf("endmodule\n");
-}
-
 // TODO: print methods for structs defined in mv_backend.h
-
 
 std::string hwinstruction_to_string(HwInstruction hi) {
     std::ostringstream oss;
@@ -263,12 +209,6 @@ std::string hwinstruction_to_string(HwInstruction hi) {
 std::string hwcelldef_to_string(HwCellDef hcd) {
     std::ostringstream oss;
     dump_hwcelldef(oss, hcd);
-    return oss.str();
-}
-
-std::string hwmoduledef_to_string(HwModuleDef hmd) {
-    std::ostringstream oss;
-    dump_hwmoduledef(oss, hmd);
     return oss.str();
 }
 
@@ -537,26 +477,6 @@ bool sigbit_to_bool(RTLIL::SigBit sig) {
     return ret;
 }
 */
-
-HwInstruction simcell_to_instruction(RTLIL::IdString cell_type, std::vector< std::pair<RTLIL::IdString, HwVar> > inputs, std::pair<RTLIL::IdString, HwVar> output ) { // Add a vector of input signals, and output signal,
-    // generate an instruction from the expr
-    HwInstruction ret;
-    std::string cell_type_name = cell_type.c_str();
-
-    HwVar lhs = ouput.second;
-
-    if (cell_type == ID($_BUF_)) {
-        std::pair<RTLIL::IdString, HwVar> input_corr = *inputs.begin();
-        HwExpr tmpRhs;
-        if (input_corr.second.)
-    }
-    
-
-    
-}
-
-
-
 
 
 HwInstruction cell_to_instruction(RTLIL::IdString cell_type, std::vector<PortCorrespond> inputs, std::pair<RTLIL::IdString,RTLIL::IdString> output ) { // Add a vector of input signals, and output signal,
@@ -831,12 +751,7 @@ void print_cellinport_conn(dict<RTLIL::IdString, std::vector< std::pair<RTLIL::I
     }
 }
 
-HwModuleDef module_to_moduledef(const RTLIL::Module *module) {
-    // sort one bit connects and simplemap cells
 
-    std::vector<HwInstruction> insts;
-
-}
 
 HwCellDef module_to_celldef(const RTLIL::Module *module) {
     // transform basic module definition into expression form
@@ -1213,3 +1128,4 @@ struct MvBackend : public Backend {
 } MvBackend;
 
 PRIVATE_NAMESPACE_END
+
