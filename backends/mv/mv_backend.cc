@@ -499,14 +499,6 @@ void print_design(const RTLIL::Design *design){
 
 
 
-/*
-std::vector<HwInstruction> connect_to_instruction(RTLIL::SigSig conn) {
-    std::vector<HwInstruction> ret;
-    // generate instruction(s) from the connection
-
-    return ret;
-}
-*/
 
 std::string hwvar_distinguish_name(HwVar hv) {
     std::string ret;
@@ -587,10 +579,7 @@ HwInstruction simcell_to_instruction(RTLIL::Cell* cell) { // Add a vector of inp
     RTLIL::IdString cell_type = cell->type;
     // find input ports and output port
     for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
-
     }
-    
-
     return ret;
 }
 */
@@ -600,9 +589,36 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
     ret.first = cell->name.str();
     // generate an instruction from the expr
     RTLIL::IdString cell_type = cell->type;
+    // distinguish between different cells, each give different result
+    if (cell_type == ID($_BUF_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first.c_str() == "\A") {
+                // 
+                rhs = HwExpr::make_var( HwVar:: );
+                ret.pred_var_names.insert();
+            }
+            else if (conn.first.c_str() == "\Y") {
+
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+        }
+        hi = HwInstruction::make_subst(lhs, rhs);
+    }
     // find input ports and output port
     for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+        RTLIL::IdString port_name = conn.first;
+        RTLIL::SigSpec sig = conn.second;
+        if (cell->input(port_name)) {
 
+        }
+        else {
+
+        }
     }
 }
 
