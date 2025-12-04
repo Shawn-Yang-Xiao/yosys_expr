@@ -25,10 +25,11 @@ struct HwVar {
 
     HwVar() : kind(CONST), const_val(false) { }
 
-    explicit HwVar(const std::string &w, int i) : kind(WIRE), wire_name(w), offset(i) { };
+    explicit HwVar(const std::string &w, bool wf, int i) : kind(WIRE), wire_name(w), with_offset(wf), offset(i) { };
     explicit HwVar(bool b) : kind(CONST), const_val(b) { };
 
-    static HwVar make_wire(const std::string &name, int i) { return HwVar(name, i); }
+    startic HwVar make_single_wire(const std::string &name) { return HwVar(name, false, 0); }
+    static HwVar make_multi_wire(const std::string &name, int i) { return HwVar(name, true, i); }
     static HwVar make_const(bool val) { return HwVar(val); }
 };
 
