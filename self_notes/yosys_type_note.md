@@ -71,7 +71,29 @@ private:
 	std::vector<RTLIL::SigBit> bits_; // LSB at index 0
 ```
 
-output as std::string using `.as_string()`
+chunks_ is used when the signal is a multi-bit wire signal or multi-bit const, and bits_ is used as a combination of single bit wire signal or single bit const.
+
+```
+void RTLIL_BACKEND::dump_sigspec(std::ostream &f, const RTLIL::SigSpec &sig, bool autoint)
+{
+	if (sig.is_chunk()) {
+		dump_sigchunk(f, sig.as_chunk(), autoint);
+	} else {
+		f << stringf("{ ");
+		for (const auto& chunk : reversed(sig.chunks())) {
+			dump_sigchunk(f, chunk, false);
+			f << stringf(" ");
+		}
+		f << stringf("}");
+	}
+}
+```
+
+TODO: dump method of sigspec did not mention bits_ member, check why.
+
+If packed, only chunks_ have value; if unpacked, only bits_ have value.
+
+
 
 
 **struct RTLIL::SigChunk** is defined in rtlil.h

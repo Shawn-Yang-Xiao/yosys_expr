@@ -808,10 +808,10 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                 RTLIL::SigBit rhs_sigbit = rhs.as_bit();
                 wire_conn[lhs_wire->name] = rhs_sigbit;
             } else {
-                log("UNEXPECTED OCCATION: RIGHT HAND SIDE OF CONNECTION IS NOT WIRE/CONST.\n");
+                log("UNEXPECTED OCCASION: RIGHT HAND SIDE OF CONNECTION IS NOT WIRE/CONST.\n");
             }
         } else {
-            log("UNEXPECTED OCCATION: LEFT HAND SIDE OF CONNECTION IS NOT WIRE.\n");
+            log("UNEXPECTED OCCASION: LEFT HAND SIDE OF CONNECTION IS NOT WIRE.\n");
         }
     }
     /*
@@ -829,7 +829,7 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                     RTLIL::SigBit tmpSigbit = sig.as_bit();
                     inport_conn[{c.second->type, c.second->name, port_name}] = tmpSigbit;
                 } else {
-                    log("UNEXPECTED OCCATION: INPUT PORT CONNECTING SIGNAL OTHER THAN WIRE/CONST.\n");
+                    log("UNEXPECTED OCCASION: INPUT PORT CONNECTING SIGNAL OTHER THAN WIRE/CONST.\n");
                 }
             } else if (c.second->output(port_name)) {
                 // add into outport_conn
@@ -837,10 +837,10 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                     RTLIL::Wire *tmpWire = sig.as_wire();
                     outport_conn[tmpWire] = {c.second->type, c.second->name, port_name};
                 } else {
-                    log("UNEXPECTED OCCATION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
+                    log("UNEXPECTED OCCASION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
                 }
             } else {
-                log("UNEXPECTED OCCATION: PORT NEITHER INPUT NOR OUTPUT.\n");
+                log("UNEXPECTED OCCASION: PORT NEITHER INPUT NOR OUTPUT.\n");
             }
         }
     }
@@ -858,7 +858,7 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                     RTLIL::SigBit tmpSigbit = sig.as_bit();
                     cellinport_conn[c.second->name].push_back( {port_name, tmpSigbit} );
                 } else {
-                    log("UNEXPECTED OCCATION: INPUT PORT CONNECTING SIGNAL OTHER THAN WIRE/CONST.\n");
+                    log("UNEXPECTED OCCASION: INPUT PORT CONNECTING SIGNAL OTHER THAN WIRE/CONST.\n");
                 }
             } else if (c.second->output(port_name)) {
                 // add into outport_conn
@@ -866,10 +866,10 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                     RTLIL::Wire *tmpWire = sig.as_wire();
                     outport_conn[tmpWire->name] = {c.second->type, c.second->name, port_name};
                 } else {
-                    log("UNEXPECTED OCCATION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
+                    log("UNEXPECTED OCCASION: OUTPUT PORT CONNECTING SIGNAL OTHER THAN WIRE.\n");
                 }
             } else {
-                log("UNEXPECTED OCCATION: PORT NEITHER INPUT NOR OUTPUT.\n");
+                log("UNEXPECTED OCCASION: PORT NEITHER INPUT NOR OUTPUT.\n");
             }
         }
     }
@@ -920,7 +920,7 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                     rhsExpr = HwExpr::make_var(tmpRhv);
                 }
                 else {
-                    log("UNEXPECTED OCCATION: CONST BIT NOT TRUE OR FALSE.\n");
+                    log("UNEXPECTED OCCASION: CONST BIT NOT TRUE OR FALSE.\n");
                 }
                 
             }
@@ -954,7 +954,7 @@ HwCellDef module_to_celldef(const RTLIL::Module *module) {
                 // log("GENERATE CELL INSTRUCTION with cell_to_instruction: %s\n", hwinstruction_to_string(tmpInst) );
             } else {
                 // if wire has no predecessor, which means that it is input port of the cell module, that will fall into this occation.
-                // log("UNEXPECTED OCCATION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
+                // log("UNEXPECTED OCCASION: PREDECESSOR IS NEITHER WIRE/CONST NOR OUTPORT");
             }
             
         }
