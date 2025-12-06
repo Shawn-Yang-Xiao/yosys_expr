@@ -42,6 +42,8 @@ public:
 ```
 and component `RTLIL::IdString name;` inherited from RTLIL::NamedObject
 
+`[0:N]` upto, `[N:0]` downto.
+
 
 **struct RTLIL::Cell** is defined in rtlil.h
 include components

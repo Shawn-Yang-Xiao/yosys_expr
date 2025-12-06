@@ -28,7 +28,7 @@ struct HwVar {
     explicit HwVar(const std::string &w, bool wf, int i) : kind(WIRE), wire_name(w), with_offset(wf), offset(i) { };
     explicit HwVar(bool b) : kind(CONST), const_val(b) { };
 
-    startic HwVar make_single_wire(const std::string &name) { return HwVar(name, false, 0); }
+    static HwVar make_single_wire(const std::string &name) { return HwVar(name, false, 0); }
     static HwVar make_multi_wire(const std::string &name, int i) { return HwVar(name, true, i); }
     static HwVar make_const(bool val) { return HwVar(val); }
 };
@@ -111,6 +111,7 @@ struct HwInstruction {
     //     | IK_sub (=)
     //     | IK_glitch (=![])
     //     | IK_noleak (<-)
+    std::string name; // instruction name
     // for subst and glitch
     HwVar lhs;
     HwExpr rhs;
@@ -122,14 +123,15 @@ struct HwInstruction {
     std::string callee_module;
     std::vector< std::pair<std::string, HwVar> > port_bindings;
 
-    HwInstruction() : kind(InstrKind::IK_subst), lhs(), rhs() {}
+    HwInstruction() : kind(InstrKind::IK_subst), name(""), lhs(), rhs() {}
 
-    explicit HwInstruction(InstrKind ik, HwVar lhv, HwExpr rhe, std::string lkn, std::vector<HwExpr> lkes, std::string cem, std::vector< std::pair<std::string, HwVar> > pbs) : kind(ik), lhs(lhv), rhs(rhe), leak_name(lkn), leak_exprs(lkes), callee_module(cem), port_bindings(pbs) { };
+    explicit HwInstruction(InstrKind ik, std::string n, HwVar lhv, HwExpr rhe, std::string lkn, std::vector<HwExpr> lkes, std::string cem, std::vector< std::pair<std::string, HwVar> > pbs) : kind(ik), name(n), lhs(lhv), rhs(rhe), leak_name(lkn), leak_exprs(lkes), callee_module(cem), port_bindings(pbs) { };
 
-    static HwInstruction make_subst(const HwVar& lhs, const HwExpr& rhs){
+    static HwInstruction make_subst(const std::string n, const HwVar& lhs, const HwExpr& rhs){
         assert(lhs.kind == HwVar::VarKind::WIRE);
         return HwInstruction {
             InstrKind::IK_subst,
+            n,
             lhs,
             rhs,
             "",
@@ -139,10 +141,11 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction make_glitch(const HwVar& lhs, const HwExpr& rhs) {
+    static HwInstruction make_glitch(const std::string n, const HwVar& lhs, const HwExpr& rhs) {
         assert(lhs.kind == HwVar::VarKind::WIRE);
         return HwInstruction {
             InstrKind::IK_glitch,
+            n,
             lhs,
             rhs,
             "",
@@ -152,9 +155,10 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction make_leak(const std::string& str, const std::vector<HwExpr> expr_vec) {
+    static HwInstruction make_leak(const std::string n, const std::string& str, const std::vector<HwExpr> expr_vec) {
         return HwInstruction{
             InstrKind::IK_leak,
+            n,
             {},
             {},
             str,
@@ -164,9 +168,10 @@ struct HwInstruction {
         };
     }
 
-    static HwInstruction make_mcall(const std::string& mod_name, std::vector< std::pair<std::string, HwVar> > bindings) {
+    static HwInstruction make_mcall(const std::string n, const std::string& mod_name, std::vector< std::pair<std::string, HwVar> > bindings) {
         return HwInstruction {
             InstrKind::IK_mcall,
+            n,
             {},
             {},
             "",

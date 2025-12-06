@@ -142,12 +142,14 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
         f << stringf(" := ");
         dump_hwexpr(f, hi.rhs);
         f << stringf("; ");
+        f << stringf("%s", hi.name);
     }
     else if (hi.kind == HwInstruction::InstrKind::IK_glitch) {
         dump_hwvar(f, hi.lhs);
         f << stringf(" =! [");
         dump_hwexpr(f, hi.rhs);
         f << stringf("]; ");
+        f << stringf("%s", hi.name);
     }
     else if (hi.kind == HwInstruction::InstrKind::IK_leak) {
         f << stringf("leak %s(", hi.leak_name);
@@ -165,6 +167,7 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
             }
         }
         f << stringf("); ");
+        f << stringf("%s", hi.name);
     }
     else {
         // IK_mcall
@@ -177,6 +180,7 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
             dump_hwvar(f, it->second);
         }
         f << stringf("; ");
+        f << stringf("%s", hi.name);
     }
 }
 
@@ -499,7 +503,6 @@ void print_design(const RTLIL::Design *design){
 
 
 
-
 std::string hwvar_distinguish_name(HwVar hv) {
     std::string ret;
     ret = stringf("%s_%d", hv.wire_name, hv.offset);
@@ -515,18 +518,35 @@ struct HwInstrInfo {
     std::string succ_var_name;
 };
 
+// void dump_operator(std::ostream& f, Operator op) {
+
+void dump_hwinstrinfo(std::ostream& f, HwInstrInfo hii) {
+    f << stringf("HwInstr %s:\n", hii.name);
+    f << stringf("  ");
+    dump_hwinstruction(f, hii.instruction);
+    f << stringf("\n  preds: ");
+    for (auto pvn_it = hii.pred_var_names.begin(); pvn_it != hii.pred_var_names.end(); pvn_it++) {
+        if (pvn_it != hii.pred_var_names.begin()) {
+            f << stringf(", ");
+        }
+        f << stringf("%s", *pvn_it);
+    }
+    f << stringf("\n  succ: ");
+    f << stringf("%s\n", hii.succ_var_name);
+}
+
 
 std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
-    HwInstrInfo ret;
+    std::vector<HwInstrInfo> ret;
     // generate instruction(s) from the connection
     // extract bits of left hand side
-    // RTLIL::SigSpec lhs_bits = conn.first.unpack();
-    // RTLIL::SigSpec rhs_bits = conn.second.unpack();
-    // log_assert(lhs_bits.size() == rhs_bits.size());
-    for (int i = 0; i < lhs_bits.size(); i++) { 
+    std::vector<RTLIL::SigBit> lhs_bits = conn.first.bits();
+    std::vector<RTLIL::SigBit> rhs_bits = conn.second.bits();
+    log_assert(lhs_bits.size() == rhs_bits.size());
+    for (int i = 0; i < (int)(lhs_bits.size()); i++) { 
         HwInstruction hi;
         // left hand side
-        RTLIL::SigBit lhs_bit = conn.first.unpack()[i];
+        RTLIL::SigBit lhs_bit = lhs_bits[i];
         log_assert(lhs_bit.wire != NULL); // should be wire
         HwVar hv_lhs;
         // check width of the wire
@@ -542,7 +562,7 @@ std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
         }
         
         // right hand side
-        RTLIL::SigBit rhs_bit = conn.second.unpack()[i];
+        RTLIL::SigBit rhs_bit = rhs_bits[i];
         log_assert(rhs_bit.wire != NULL); // should be wire
         HwVar hv_rhs;
         if (rhs_bit.wire->width == 1) {
@@ -555,10 +575,9 @@ std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
         else {
             log("UNEXPECTED OCCASION: connect RHS wire has invalid width.\n");
         }
-        hi = HwInstruction::make_subst(hv_lhs, HwExpr::make_var(hv_rhs));
+        std::string instr_name = hwvar_distinguish_name(hv_lhs);
+        hi = HwInstruction::make_subst(instr_name, hv_lhs, HwExpr::make_var(hv_rhs));
         // generate name for the instruction, use lhs wire name and index
-        std::string instr_name;
-        instr_name = hwvar_distinguish_name(hv_lhs);
         // pred var names
         std::set<std::string> pred_names;
         pred_names.insert( hwvar_distinguish_name(hv_rhs) );
@@ -586,7 +605,7 @@ HwInstruction simcell_to_instruction(RTLIL::Cell* cell) { // Add a vector of inp
 
 HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
     HwInstrInfo ret;
-    ret.first = cell->name.str();
+    ret.name = cell->name.str();
     // generate an instruction from the expr
     RTLIL::IdString cell_type = cell->type;
     // distinguish between different cells, each give different result
@@ -595,52 +614,334 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
         HwVar lhs;
         HwExpr rhs;
         for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
-            if (conn.first.c_str() == "\A") {
-                // 
-                rhs = HwExpr::make_var( HwVar:: );
-                ret.pred_var_names.insert();
+            if (conn.first == "\\A") {
+                RTLIL::SigBit rhs_bit = conn.second.bits()[0];
+                if (rhs_bit.wire != NULL) {
+                    HwVar rhs_var;
+                    if (rhs_bit.wire->width == 1) {
+                        rhs_var = HwVar::make_single_wire(rhs_bit.wire->name.c_str());
+                    }
+                    else if (rhs_bit.wire->width >= 2) {
+                        rhs_var = HwVar::make_multi_wire(rhs_bit.wire->name.c_str(), rhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: RHS of BUF cell has invalid width.\n");
+                    }
+                    rhs = HwExpr::make_var(rhs_var);
+                    ret.pred_var_names.insert(hwvar_distinguish_name(rhs_var));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: RHS of BUF cell is not wire.\n");
+                }
             }
-            else if (conn.first.c_str() == "\Y") {
-
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                if (lhs_bit.wire != NULL) {
+                    if (lhs_bit.wire->width == 1) {
+                        lhs = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+                    }
+                    else if (lhs_bit.wire->width >= 2) {
+                        lhs = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: LHS of BUF cell has invalid width.\n");
+                    }
+                    ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+                else {
+                    log("UNEXPECTED OCCASION: LHS of BUF cell is not wire.\n");
+                }
             }
             else {
                 log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
             }
         }
-        hi = HwInstruction::make_subst(lhs, rhs);
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
     }
-    // find input ports and output port
-    for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
-        RTLIL::IdString port_name = conn.first;
-        RTLIL::SigSpec sig = conn.second;
-        if (cell->input(port_name)) {
-
+    else if (cell_type == ID($_NOT_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit rhs_bit = conn.second.bits()[0];
+                if (rhs_bit.wire != NULL) {
+                    HwVar rhs_var;
+                    if (rhs_bit.wire->width == 1) {
+                        rhs_var = HwVar::make_single_wire(rhs_bit.wire->name.c_str());
+                    }
+                    else if (rhs_bit.wire->width >= 2) {
+                        rhs_var = HwVar::make_multi_wire(rhs_bit.wire->name.c_str(), rhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: RHS of NOT cell has invalid width.\n");
+                    }
+                    rhs = HwExpr::make_unary(Operator::NEG, HwExpr::make_var(rhs_var));
+                    ret.pred_var_names.insert(hwvar_distinguish_name(rhs_var));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: RHS of NOT cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                if (lhs_bit.wire != NULL) {
+                    if (lhs_bit.wire->width == 1) {
+                        lhs = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+                    }
+                    else if (lhs_bit.wire->width >= 2) {
+                        lhs = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: LHS of NOT cell has invalid width.\n");
+                    }
+                    ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
         }
-        else {
-
-        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
     }
+    else if (cell_type == ID($_AND_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                if (var_a_bit.wire != NULL) {
+                    if (var_a_bit.wire->width == 1) {
+                        var_a = HwVar::make_single_wire(var_a_bit.wire->name.c_str());
+                    }
+                    else if (var_a_bit.wire->width >= 2) {
+                        var_a = HwVar::make_multi_wire(var_a_bit.wire->name.c_str(), var_a_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input A of AND cell has invalid width.\n");
+                    }
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input A of AND cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                if (var_b_bit.wire != NULL) {
+                    if (var_b_bit.wire->width == 1) {
+                        var_b = HwVar::make_single_wire(var_b_bit.wire->name.c_str());
+                    }
+                    else if (var_b_bit.wire->width >= 2) {
+                        var_b = HwVar::make_multi_wire(var_b_bit.wire->name.c_str(), var_b_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input B of AND cell has invalid width.\n");
+                    }
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input B of AND cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                if (lhs_bit.wire != NULL) {
+                    if (lhs_bit.wire->width == 1) {
+                        lhs = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+                    }
+                    else if (lhs_bit.wire->width >= 2) {
+                        lhs = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: LHS of AND cell has invalid width.\n");
+                    }
+                    ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+                else {
+                    log("UNEXPECTED OCCASION: LHS of AND cell is not wire.\n");
+                }
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_binary(Operator::MUL, HwExpr::make_var(var_a), HwExpr::make_var(var_b));
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    // else if (cell_type == ID($_NAND_)) {}
+    // else if (cell_type == ID($_OR_)) {}
+    // else if (cell_type == ID($_NOR_)) {}
+    else if (cell_type == ID($_XOR_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                if (var_a_bit.wire != NULL) {
+                    if (var_a_bit.wire->width == 1) {
+                        var_a = HwVar::make_single_wire(var_a_bit.wire->name.c_str());
+                    }
+                    else if (var_a_bit.wire->width >= 2) {
+                        var_a = HwVar::make_multi_wire(var_a_bit.wire->name.c_str(), var_a_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input A of XOR cell has invalid width.\n");
+                    }
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input A of XOR cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                if (var_b_bit.wire != NULL) {
+                    if (var_b_bit.wire->width == 1) {
+                        var_b = HwVar::make_single_wire(var_b_bit.wire->name.c_str());
+                    }
+                    else if (var_b_bit.wire->width >= 2) {
+                        var_b = HwVar::make_multi_wire(var_b_bit.wire->name.c_str(), var_b_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input B of XOR cell has invalid width.\n");
+                    }
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input B of XOR cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                if (lhs_bit.wire != NULL) {
+                    if (lhs_bit.wire->width == 1) {
+                        lhs = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+                    }
+                    else if (lhs_bit.wire->width >= 2) {
+                        lhs = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: LHS of XOR cell has invalid width.\n");
+                    }
+                    ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+                else {
+                    log("UNEXPECTED OCCASION: LHS of XOR cell is not wire.\n");
+                }
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_binary(Operator::ADD, HwExpr::make_var(var_a), HwExpr::make_var(var_b));
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    // else if (cell_type == ID($_XNOR_)) {}
+    // else if (cell_type == ID($_ANDNOT_)) {}
+    // else if (cell_type == ID($_ORNOT_)) {}
+    // jump $_MUX_, $_NMUX_, $_MUX4_, $_MUX8_, $_MUX16_
+    // TODO: start from line 367, $_AIO3_
+    else {
+        log("UNEXPECTED OCCASION: UNKNOWN CELL TYPE %s.\n", cell_type.c_str());
+    }
+
+
+    return ret;
 }
 
 
 struct WireConnInfo{
-    std::string wire_name;
-    bool with_bool;
+    std::string wire_name; // plain name
+    bool with_offset;
     int offset;
     std::string driver_inst;
     std::vector<std::string> user_insts;
 };
 
 
+void dump_wireconninfo(std::ostream& f, WireConnInfo wci) {
+    f << stringf("WireConnInfo of wire %s", wci.wire_name);
+    if (wci.with_offset) {
+        f << stringf("[%d]", wci.offset);
+    }
+    f << stringf(", driven by %s, used by ", wci.driver_inst);
+    for (auto it = wci.user_insts.begin(); it != wci.user_insts.end(); it++) {
+        if (it != wci.user_insts.begin()) {
+            f << stringf(", ");
+        }
+        f << stringf("%s", *it);
+    }
+    f << stringf("\n");
+}
+
+
+
 std::vector<WireConnInfo> wire_to_wire_conn_info_base(RTLIL::Wire* wire) {
     std::vector<WireConnInfo> ret;
     // for every bit in the wire, generate a WireConnInfo
-    for (int i=0; i < wire->width; i++) {
+    if (wire->width == 1) {
         WireConnInfo wci;
-        
+        wci.wire_name = wire->name.c_str();
+        wci.with_offset = false;
+        wci.offset = 0;
+        // driver_inst and user_insts to be filled later
+        ret.push_back(wci);
     }
+    else if (wire->width >= 2) {
+        for (int i=0; i < wire->width; i++) {
+            WireConnInfo wci;
+            wci.wire_name = wire->name.c_str();
+            wci.with_offset = true;
+            if (wire->upto) {
+                wci.offset = wire->start_offset - wire->width;
+            }
+            else {
+                wci.offset = wire->start_offset + i;
+            }
+            ret.push_back(wci);
+        }
+    }
+    else {
+        log("UNEXPECTED OCCASION: wire has invalid width.\n");
+    }
+    return ret;
 }
 
+
+// used to implement topological sorting
+struct InstrNode {
+    std::string instr_name;
+    std::vector<std::string> descend_instrs_name; // instrs that use the output of this instr as input
+    int remain_driver;
+    // std::vector<std::string> pred_var_names; // multiple input signals, each corr to a driver instr
+};
+
+
+void dump_instrnode(std::ostream& f, InstrNode inode) {
+    f << stringf("InstrNode %s: remain_driver %d, descend_instrs ", inode.instr_name, inode.remain_driver);
+    for (auto it = inode.descend_instrs_name.begin(); it != inode.descend_instrs_name.end(); it++) {
+        if (it != inode.descend_instrs_name.begin()) {
+            f << stringf(", ");
+        }
+        f << stringf("%s", *it);
+    }
+    f << stringf("\n");
+}
 
 HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
     HwModuleDef ret;
@@ -651,14 +952,31 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
     dict<std::string, HwInstruction> instrs_dict; // used as library of instructions
 
     std::vector<WireConnInfo> wire_conn_infos;
+    dict<std::string, WireConnInfo> wire_conn_info_dict;
     // for every wire, generate a wire connection info
     for (std::pair<RTLIL::IdString, RTLIL::Wire *> wire_pair : module->wires_) {
         RTLIL::Wire* wire = wire_pair.second;
         // add info(s) into the vector
         std::vector<WireConnInfo> tmp_wire_conn_infos = wire_to_wire_conn_info_base(wire);
-        wire_conn_infos.insert(wire_conn_infos.end(), tmp_wire_conn_infos.begin(), tmp_wire_conn_infos.end());
+        wire_conn_infos.insert(wire_conn_infos.end(), tmp_wire_conn_infos.begin(), tmp_wire_conn_infos.end()); // TODO: to be deprecated
+        for (auto wci : tmp_wire_conn_infos) {
+            std::string wci_distinguish_name;
+            if (wci.with_offset) {
+                wci_distinguish_name = stringf("%s_%d", wci.wire_name.c_str(), wci.offset);
+            }
+            else {
+                wci_distinguish_name = stringf("%s_0", wci.wire_name.c_str());
+            }
+            wire_conn_info_dict[wci_distinguish_name] = wci;
+        }
     }
 
+    // log("Generated wire connection infos:\n");
+    // for(auto wci : wire_conn_infos) {
+    //     std::ostringstream oss;
+    //     dump_wireconninfo(oss, wci);
+    //     log("%s\n", oss.str());
+    // } // driver by and used by info currently not filled
 
     // generate instructions from cells and connections, to be sorted later
     /*
@@ -673,6 +991,10 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
     }
     */
     // generate instructions from cells and connections, store into dict
+
+    log("Generated instructions in module %s:\n", module->name.c_str());
+
+
     for (std::pair<RTLIL::IdString, RTLIL::Cell *> cell_pair : module->cells_) {
         RTLIL::Cell* cell = cell_pair.second;
         auto instr_info = simcell_to_instruction(cell);
@@ -681,6 +1003,27 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
         }
         instrs_dict[instr_info.name] = instr_info.instruction;
 
+        // use pred and succ wire info, add to wire_conn_infos
+        // as to preds wires of the instr, the instr is their user insts
+        for (auto pred_var_name : instr_info.pred_var_names) {
+            if (wire_conn_info_dict.count(pred_var_name) != 0) {
+                wire_conn_info_dict[pred_var_name].user_insts.push_back( instr_info.name );
+            }
+            else {
+                log("UNEXPECTED OCCASION: pred var name %s not found in wire conn info dict.\n", pred_var_name.c_str());
+            }
+        }
+        // as to succ wire of the instr, the instr is its driver inst
+        if (wire_conn_info_dict.count(instr_info.succ_var_name) != 0) {
+            wire_conn_info_dict[instr_info.succ_var_name].driver_inst = instr_info.name;
+        }
+        else {
+            log("UNEXPECTED OCCASION: succ var name %s not found in wire conn info dict.\n", instr_info.succ_var_name.c_str());
+        }
+
+        std::ostringstream oss;
+        dump_hwinstrinfo(oss, instr_info);
+        log("%s\n", oss.str());
 
     }
     for (RTLIL::SigSig conn : module->connections()) {
@@ -690,14 +1033,105 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
                 log("UNEXPECTED OCCASION: Instruction %s already exists in module %s, overwriting.\n", instr_info.name, module->name.c_str());
             }
             instrs_dict[instr_info.name] = instr_info.instruction;
+
+            // use pred and succ wire info, add to wire_conn_infos
+            // as to preds wires of the instr, the instr is their user insts
+            for (auto pred_var_name : instr_info.pred_var_names) {
+                if (wire_conn_info_dict.count(pred_var_name) != 0) {
+                    wire_conn_info_dict[pred_var_name].user_insts.push_back( instr_info.name );
+                }   
+                else {
+                    log("UNEXPECTED OCCASION: pred var name %s not found in wire conn info dict.\n", pred_var_name.c_str());
+                }
+            }
+            // as to succ wire of the instr, the instr is its driver inst
+            if (wire_conn_info_dict.count(instr_info.succ_var_name) != 0) {
+                wire_conn_info_dict[instr_info.succ_var_name].driver_inst = instr_info.name;
+            }
+            else {
+                log("UNEXPECTED OCCASION: succ var name %s not found in wire conn info dict.\n", instr_info.succ_var_name.c_str());
+            }
+            std::ostringstream oss;
+            dump_hwinstrinfo(oss, instr_info);
+            log("%s\n", oss.str());
+
         }
     }
 
+
+    log("Filled wire connection infos:\n");
+    for(auto wcid : wire_conn_info_dict) {
+        std::ostringstream oss;
+        dump_wireconninfo(oss, wcid.second);
+        log("%s\n", oss.str());
+    }
+
+    // log("Generated instructions in module %s:\n", module->name.c_str());
+    // for (auto inst_ele : instrs_dict) {
+    //     std::ostringstream oss;
+    //     dump_hwinstruction(oss, inst_ele.second);
+    //     log("%s\n", oss.str());
+    // }
+
+    /*
+    std::vector<InstrNode> instr_nodes;
+    dict<std::string, InstrNode*> instr_node_dict;
+    // build instr nodes for topological sorting 
+
+    for (auto inst_dict_ele : instrs_dict) {
+        InstrNode inode;
+        inode.instr_name = inst_dict_ele.first;
+        inode.remain_driver = 0; // to be filled
+        instr_nodes.push_back(inode);
+        instr_node_dict[inst_dict_ele.first] = &instr_nodes.back();
+    }
+
+    for (auto wcid: wire_conn_info_dict){
+        std::string driver_inst = wcid.second.driver_inst;
+        for (auto user_inst : wcid.second.user_insts) {
+            // add edge from driver_inst to user_inst
+            if (instr_node_dict.count(driver_inst) != 0 && instr_node_dict.count(user_inst) != 0) {
+                instr_node_dict[driver_inst]->descend_instrs_name.push_back(user_inst);
+                instr_node_dict[user_inst]->remain_driver += 1;
+            }
+        }
+    }
     
+    for (auto inode_ele : instr_node_dict) {
+        std::ostringstream oss;
+        dump_instrnode(oss, *(inode_ele.second));
+        log("%s", oss.str());
+    }
+    */
 
+    dict<std::string, InstrNode> instr_node;
 
+    for (auto inst_dict_ele : instrs_dict) {
+        InstrNode inode;
+        inode.instr_name = inst_dict_ele.first;
+        inode.remain_driver = 0; // to be filled
+        instr_node[inst_dict_ele.first] = inode;
+    }
 
+    for (auto wcid: wire_conn_info_dict) {
+        std::string driver_inst = wcid.second.driver_inst;
+        for (auto user_inst : wcid.second.user_insts) {
+            // add edge from driver_inst to user_inst
+            if (instr_node.count(driver_inst) != 0 && instr_node.count(user_inst) != 0) {
+                instr_node[driver_inst].descend_instrs_name.push_back(user_inst);
+                instr_node[user_inst].remain_driver += 1;
+            }
+        }
+    }
 
+    log("Instruction nodes for topological sorting:\n");
+    for (auto inode_ele : instr_node) {
+        std::ostringstream oss;
+        dump_instrnode(oss, inode_ele.second);
+        log("%s", oss.str());
+    }
+
+    return ret;
 }
 
 
@@ -712,11 +1146,6 @@ struct MvBackend : public Backend {
         log("\n");
         log("Generate MV file from RTLIL design for verification.\n");
         log("\n");
-        log("    -noglitch\n");
-        log("        Disable glitch modeling when generating MV file.\n");
-        log("    -clib <filename>\n");
-        log("        Use the specified Verilog file as the cells library (default: built-in simcells.v).");
-        log("\n");
 
     }
     void execute(std::ostream *&f, std::string filename, std::vector<std::string> args, RTLIL::Design *design) override {
@@ -724,21 +1153,13 @@ struct MvBackend : public Backend {
 
         // TODO: Process arguments
 
-        noglitch = false;
 
         size_t argidx;
         std::string celllib_file;
 
         for (argidx = 1; argidx < args.size(); argidx++) {
             std::string arg = args[argidx];
-            if (arg == "-noglitch") {
-                noglitch = true;
-                continue;
-            }
-            if (arg == "-clib" && argidx+1 < args.size()) {
-                celllib_file = args[++argidx];
-                continue;
-            }
+
             // EXTEND: Arguments 
             cmd_error(args, argidx, "Unknown option or option in arguments.");
         }
@@ -748,17 +1169,11 @@ struct MvBackend : public Backend {
         
         *f << stringf("/* Generated by Yosys_expr based on %s */\n", yosys_maybe_version());
 
-        if (celllib_file.empty()) {
-            get_simcells_expr();
-        }
-        else {
-            get_celllib_expr(celllib_file);
-        }
         
         // TODO: write framework from design to HwModuleDef
         // there is only one module in simcells design
 
-        RTLIL::Module* top_moudle = design->top_module();
+        RTLIL::Module* top_module = design->top_module();
         module_to_hwmoduledef(top_module);
 
 

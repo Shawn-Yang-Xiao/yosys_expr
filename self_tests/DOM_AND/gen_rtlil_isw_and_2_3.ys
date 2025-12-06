@@ -1,0 +1,10 @@
+read_verilog isw_and_2_3.v;
+hierarchy -check -top ISW_AND_2_3;
+proc;
+flatten;
+opt;
+memory;
+opt;
+techmap;
+opt;
+write_rtlil dom_and_2_3.rtlil;
