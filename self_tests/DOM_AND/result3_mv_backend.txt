@@ -1,0 +1,778 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2025  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.58+86 (git sha1 b813c3074, g++ 13.3.0-6ubuntu2~24.04 -fPIC -O3)
+
+-- Executing script file `print_mv_backend_dom_and_2.ys' --
+
+1. Executing Verilog-2005 frontend: isw_and_2.v
+Parsing Verilog input from `isw_and_2.v' to AST representation.
+verilog frontend filename isw_and_2.v
+Generating RTLIL representation for module `\ISW_AND_2'.
+Successfully finished Verilog frontend.
+
+2. Executing HIERARCHY pass (managing design hierarchy).
+
+2.1. Analyzing design hierarchy..
+Top module:  \ISW_AND_2
+
+2.2. Analyzing design hierarchy..
+Top module:  \ISW_AND_2
+Removed 0 unused modules.
+
+3. Executing PROC pass (convert processes to netlists).
+
+3.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+3.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Removed a total of 0 dead cases.
+
+3.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 0 assignments to connections.
+
+3.4. Executing PROC_INIT pass (extract init attributes).
+
+3.5. Executing PROC_ARST pass (detect async resets in processes).
+
+3.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+
+3.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+
+3.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+
+3.9. Executing PROC_DFF pass (convert process syncs to FFs).
+
+3.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+3.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+3.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+4. Executing FLATTEN pass (flatten design).
+
+5. Executing OPT pass (performing simple optimizations).
+
+5.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+5.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+5.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \ISW_AND_2..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+5.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \ISW_AND_2.
+Performed a total of 0 changes.
+
+5.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+5.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \ISW_AND_2..
+Removed 0 unused cells and 12 unused wires.
+<suppressed ~1 debug messages>
+
+5.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+5.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+5.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \ISW_AND_2..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+5.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \ISW_AND_2.
+Performed a total of 0 changes.
+
+5.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+5.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+5.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \ISW_AND_2..
+
+5.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+5.16. Finished fast OPT passes. (There is nothing left to do.)
+
+6. Executing MEMORY pass.
+
+6.1. Executing OPT_MEM pass (optimize memories).
+Performed a total of 0 transformations.
+
+6.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write priority relations).
+Performed a total of 0 transformations.
+
+6.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback paths).
+
+6.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).
+
+6.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+
+6.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \ISW_AND_2..
+
+6.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).
+
+6.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.
+
+6.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \ISW_AND_2..
+
+6.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+6.11. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).
+
+7. Executing OPT pass (performing simple optimizations).
+
+7.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+7.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+7.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \ISW_AND_2..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+7.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \ISW_AND_2.
+Performed a total of 0 changes.
+
+7.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+7.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+7.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \ISW_AND_2..
+
+7.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+7.9. Finished fast OPT passes. (There is nothing left to do.)
+
+8. Executing TECHMAP pass (map to technology primitives).
+
+8.1. Executing Verilog-2005 frontend: /home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v
+Parsing Verilog input from `/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v' to AST representation.
+verilog frontend filename /home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Generating RTLIL representation for module `\$connect'.
+Generating RTLIL representation for module `\$input_port'.
+Successfully finished Verilog frontend.
+===================== Print techmap ======================
+Module name: \$input_port.
+  Wires:
+    \Y
+  Cells:
+Module name: \$connect.
+  Wires:
+    \B
+    \A
+  Cells:
+Module name: \_90_lut.
+  Wires:
+  Cells:
+Module name: \_90_demux.
+  Wires:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:629$96_Y
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:629$95_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:628$94_Y
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:628$93_Y
+    \Y
+    \S
+    \A
+  Cells:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:629$96: type $mux, conn \Y \S \B \A 
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:629$95: type $pos, conn \Y \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:628$94: type $mux, conn \Y \S \B \A 
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:628$93: type $pos, conn \Y \A 
+Module name: \_90_pmux.
+  Wires:
+    $reduce_or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:601$92_Y
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:593$91_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:605$90_Y
+    $reduce_or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:605$89_Y
+    \B_OR[0].B_AND_BITS
+    \B_AND_S
+    \Y_B
+    \Y
+    \S
+    \B
+    \A
+  Cells:
+    $reduce_or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:601$92: type $reduce_or, conn \Y \A 
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:593$91: type $and, conn \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:605$90: type $mux, conn \Y \S \B \A 
+    $reduce_or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:605$89: type $reduce_or, conn \Y \A 
+Module name: \_90_pow.
+  Wires:
+    \_TECHMAP_FAIL_
+    \Y
+    \B
+    \A
+  Cells:
+Module name: \_90_modfloor.
+  Wires:
+    \Y
+    \B
+    \A
+  Cells:
+    \div_mod: type \$__div_mod_floor, conn \R \B \A 
+Module name: \_90_divfloor.
+  Wires:
+    \Y
+    \B
+    \A
+  Cells:
+    \div_mod: type \$__div_mod_floor, conn \Y \B \A 
+Module name: \$__div_mod_floor.
+  Wires:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$88_Y
+    $add$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$87_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$86_Y
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$85_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$84_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$83_Y
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$82_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:481$81_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:481$80_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:481$79_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$78_Y
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$77_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$76_Y
+    $sub$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$75_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$74_Y
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$73_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$72_Y
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$71_Y
+    $eq$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$70_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$69_Y
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$68_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:465$67_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:465$66_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:465$65_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:464$64_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:464$63_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:464$62_Y
+    \R_s
+    \R_u
+    \Y_u
+    \B_buf_u
+    \A_buf_u
+    \B_buf
+    \A_buf
+    \R
+    \Y
+    \B
+    \A
+  Cells:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$88: type $mux, conn \Y \S \B \A 
+    $add$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$87: type $add, conn \Y \B \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$86: type $logic_and, conn \Y \B \A 
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$85: type $ne, conn \Y \B \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$84: type $logic_and, conn \Y \B \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$83: type $logic_and, conn \Y \B \A 
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:484$82: type $ne, conn \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:481$81: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:481$80: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:481$79: type $logic_and, conn \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$78: type $mux, conn \Y \S \B \A 
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$77: type $pos, conn \Y \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$76: type $mux, conn \Y \S \B \A 
+    $sub$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$75: type $sub, conn \Y \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$74: type $neg, conn \Y \A 
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$73: type $pos, conn \Y \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$72: type $neg, conn \Y \A 
+    $extend$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$71: type $pos, conn \Y \A 
+    $eq$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$70: type $eq, conn \Y \B \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$69: type $logic_and, conn \Y \B \A 
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:478$68: type $ne, conn \Y \B \A 
+    \div_mod_u: type \$__div_mod_u, conn \R \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:465$67: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:465$66: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:465$65: type $logic_and, conn \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:464$64: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:464$63: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:464$62: type $logic_and, conn \Y \B \A 
+    \B_conv: type \$pos, conn \Y \A 
+    \A_conv: type \$pos, conn \Y \A 
+Module name: \_90_mod.
+  Wires:
+    \Y
+    \B
+    \A
+  Cells:
+    \div_mod: type \$__div_mod_trunc, conn \R \B \A 
+Module name: \_90_div.
+  Wires:
+    \Y
+    \B
+    \A
+  Cells:
+    \div_mod: type \$__div_mod_trunc, conn \Y \B \A 
+Module name: \$__div_mod_trunc.
+  Wires:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:384$61_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:384$60_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:384$59_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$58_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$57_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$56_Y
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$55_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:372$54_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:372$53_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:372$52_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:371$51_Y
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:371$50_Y
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:371$49_Y
+    \R_u
+    \Y_u
+    \B_buf_u
+    \A_buf_u
+    \B_buf
+    \A_buf
+    \R
+    \Y
+    \B
+    \A
+  Cells:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:384$61: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:384$60: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:384$59: type $logic_and, conn \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$58: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$57: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$56: type $logic_and, conn \Y \B \A 
+    $ne$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:383$55: type $ne, conn \Y \B \A 
+    \div_mod_u: type \$__div_mod_u, conn \R \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:372$54: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:372$53: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:372$52: type $logic_and, conn \Y \B \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:371$51: type $mux, conn \Y \S \B \A 
+    $neg$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:371$50: type $neg, conn \Y \A 
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:371$49: type $logic_and, conn \Y \B \A 
+    \B_conv: type \$pos, conn \Y \A 
+    \A_conv: type \$pos, conn \Y \A 
+Module name: \$__div_mod_u.
+  Wires:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:340$48_Y
+    $sub$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:340$47_Y
+    $ge$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:339$46_Y
+    \genblk0.stage[0].stage_in
+    \chaindata
+    \R
+    \Y
+    \B
+    \A
+  Cells:
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:340$48: type $mux, conn \Y \S \B \A 
+    $sub$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:340$47: type $sub, conn \Y \B \A 
+    $ge$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:339$46: type $ge, conn \Y \B \A 
+Module name: \_90_alumacc.
+  Wires:
+  Cells:
+Module name: \_90_macc.
+  Wires:
+  Cells:
+Module name: \_90_alu.
+  Wires:
+    $xor$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:296$45_Y
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:279$44_Y
+    $not$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:279$43_Y
+    \Cnull
+    \G
+    \P
+    \B_buf
+    \A_buf
+    \BB
+    \AA
+    \CO
+    \BI
+    \CI
+    \Y
+    \X
+    \B
+    \A
+  Cells:
+    $xor$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:296$45: type $xor, conn \Y \B \A 
+    \lcu: type \$lcu, conn \CO \CI \G \P 
+    \fa: type \$fa, conn \Y \X \C \B \A 
+    \B_conv: type \$pos, conn \Y \A 
+    \A_conv: type \$pos, conn \Y \A 
+    $ternary$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:279$44: type $mux, conn \Y \S \B \A 
+    $not$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:279$43: type $not, conn \Y \A 
+Module name: \_90_lcu_brent_kung.
+  Wires:
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:241$42_Y
+    $or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:240$41_Y
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:240$40_Y
+    $or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:231$39_Y
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:231$38_Y
+    $0\g[1:0]
+    $0\p[1:0]
+    $0\j[31:0]
+    $0\i[31:0]
+    \_TECHMAP_DO_
+    \g
+    \p
+    \j
+    \i
+    \CO
+    \CI
+    \G
+    \P
+  Cells:
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:241$42: type $and, conn \Y \B \A 
+    $or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:240$41: type $or, conn \Y \B \A 
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:240$40: type $and, conn \Y \B \A 
+    $or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:231$39: type $or, conn \Y \B \A 
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:231$38: type $and, conn \Y \B \A 
+Module name: \_90_fa.
+  Wires:
+    $or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:206$36_Y
+    $xor$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:206$35_Y
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:205$34_Y
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:205$33_Y
+    $xor$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:205$32_Y
+    \t3
+    \t2
+    \t1
+    \Y
+    \X
+    \C
+    \B
+    \A
+  Cells:
+    $or$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:206$36: type $or, conn \Y \B \A 
+    $xor$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:206$35: type $xor, conn \Y \B \A 
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:205$34: type $and, conn \Y \B \A 
+    $and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:205$33: type $and, conn \Y \B \A 
+    $xor$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:205$32: type $xor, conn \Y \B \A 
+Module name: \_90_shift_shiftx.
+  Wires:
+    $3\buffer[0:0]
+    $2\buffer[0:0]
+    $1\buffer[0:0]
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:174$31_Y
+    $0\buffer[0:0]
+    $0\overflow[0:0]
+    $0\i[31:0]
+    \overflow
+    \buffer
+    \i
+    \_TECHMAP_DO_01_
+    \_TECHMAP_DO_00_
+    \a_padding
+    \Y
+    \B
+    \A
+  Cells:
+    $logic_and$/home/xiaoyang/Desktop/research/my_repos/yosys_expr/share/techmap.v:174$31: type $logic_and, conn \Y \B \A 
+Module name: \_90_shift_ops_shr_shl_sshl_sshr.
+  Wires:
+    $3\buffer[0:0]
+    $2\buffer[0:0]
+    $1\buffer[0:0]
+    $0\buffer[0:0]
+    $0\overflow[0:0]
+    $0\i[31:0]
+    \overflow
+    \buffer
+    \i
+    \_TECHMAP_DO_01_
+    \_TECHMAP_DO_00_
+    \Y
+    \B
+    \A
+  Cells:
+Module name: \_90_simplemap_registers.
+  Wires:
+  Cells:
+Module name: \_90_simplemap_various.
+  Wires:
+  Cells:
+Module name: \_90_simplemap_compare_ops.
+  Wires:
+  Cells:
+Module name: \_90_simplemap_logic_ops.
+  Wires:
+  Cells:
+Module name: \_90_simplemap_reduce_ops.
+  Wires:
+  Cells:
+Module name: \_90_simplemap_bool_ops.
+  Wires:
+  Cells:
+=========================================================
+
+8.2. Continuing TECHMAP pass.
+Tpl_name: \_90_simplemap_bool_ops.
+Using extmapper simplemap for cells of type $and.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Using extmapper simplemap for cells of type $xor.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+Tpl_name: \_90_simplemap_bool_ops.
+No more expansions possible.
+<suppressed ~98 debug messages>
+
+9. Executing OPT pass (performing simple optimizations).
+
+9.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+9.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+9.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \ISW_AND_2..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+9.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \ISW_AND_2.
+Performed a total of 0 changes.
+
+9.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\ISW_AND_2'.
+Removed a total of 0 cells.
+
+9.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+9.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \ISW_AND_2..
+
+9.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module ISW_AND_2.
+
+9.9. Finished fast OPT passes. (There is nothing left to do.)
+
+10. Executing MV backend.
+/* Generated by Yosys_expr based on Yosys 0.58+86 (git sha1 b813c3074, g++ 13.3.0-6ubuntu2~24.04 -fPIC -O3) */
+Generated instructions in module \ISW_AND_2:
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$100:
+  wire \a2b0 := wire \a [2] * wire \b [0]; $auto$simplemap.cc:106:simplemap_bitop$100
+  preds: \a_2, \b_0
+  succ: \a2b0_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$101:
+  wire \a1b2 := wire \a [1] * wire \b [2]; $auto$simplemap.cc:106:simplemap_bitop$101
+  preds: \a_1, \b_2
+  succ: \a1b2_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$102:
+  wire \a2b1 := wire \a [2] * wire \b [1]; $auto$simplemap.cc:106:simplemap_bitop$102
+  preds: \a_2, \b_1
+  succ: \a2b1_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$103:
+  wire $xor$isw_and_2.v:61$7_Y := wire \r01 + wire \a0b1; $auto$simplemap.cc:106:simplemap_bitop$103
+  preds: \a0b1_0, \r01_0
+  succ: $xor$isw_and_2.v:61$7_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$104:
+  wire \r10 := wire $xor$isw_and_2.v:61$7_Y + wire \a1b0; $auto$simplemap.cc:106:simplemap_bitop$104
+  preds: $xor$isw_and_2.v:61$7_Y_0, \a1b0_0
+  succ: \r10_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$105:
+  wire $xor$isw_and_2.v:62$9_Y := wire \r02 + wire \a0b2; $auto$simplemap.cc:106:simplemap_bitop$105
+  preds: \a0b2_0, \r02_0
+  succ: $xor$isw_and_2.v:62$9_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$106:
+  wire \r20 := wire $xor$isw_and_2.v:62$9_Y + wire \a2b0; $auto$simplemap.cc:106:simplemap_bitop$106
+  preds: $xor$isw_and_2.v:62$9_Y_0, \a2b0_0
+  succ: \r20_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$107:
+  wire $xor$isw_and_2.v:63$11_Y := wire \r12 + wire \a1b2; $auto$simplemap.cc:106:simplemap_bitop$107
+  preds: \a1b2_0, \r12_0
+  succ: $xor$isw_and_2.v:63$11_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$108:
+  wire \r21 := wire $xor$isw_and_2.v:63$11_Y + wire \a2b1; $auto$simplemap.cc:106:simplemap_bitop$108
+  preds: $xor$isw_and_2.v:63$11_Y_0, \a2b1_0
+  succ: \r21_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$109:
+  wire $and$isw_and_2.v:65$13_Y := wire \a [0] * wire \b [0]; $auto$simplemap.cc:106:simplemap_bitop$109
+  preds: \a_0, \b_0
+  succ: $and$isw_and_2.v:65$13_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$110:
+  wire $xor$isw_and_2.v:65$14_Y := wire $and$isw_and_2.v:65$13_Y + wire \r01; $auto$simplemap.cc:106:simplemap_bitop$110
+  preds: $and$isw_and_2.v:65$13_Y_0, \r01_0
+  succ: $xor$isw_and_2.v:65$14_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$111:
+  wire \c [0] := wire $xor$isw_and_2.v:65$14_Y + wire \r02; $auto$simplemap.cc:106:simplemap_bitop$111
+  preds: $xor$isw_and_2.v:65$14_Y_0, \r02_0
+  succ: \c_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$112:
+  wire $and$isw_and_2.v:66$16_Y := wire \a [1] * wire \b [1]; $auto$simplemap.cc:106:simplemap_bitop$112
+  preds: \a_1, \b_1
+  succ: $and$isw_and_2.v:66$16_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$113:
+  wire $xor$isw_and_2.v:66$17_Y := wire $and$isw_and_2.v:66$16_Y + wire \r10; $auto$simplemap.cc:106:simplemap_bitop$113
+  preds: $and$isw_and_2.v:66$16_Y_0, \r10_0
+  succ: $xor$isw_and_2.v:66$17_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$114:
+  wire \c [1] := wire $xor$isw_and_2.v:66$17_Y + wire \r12; $auto$simplemap.cc:106:simplemap_bitop$114
+  preds: $xor$isw_and_2.v:66$17_Y_0, \r12_0
+  succ: \c_1
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$115:
+  wire $and$isw_and_2.v:67$19_Y := wire \a [2] * wire \b [2]; $auto$simplemap.cc:106:simplemap_bitop$115
+  preds: \a_2, \b_2
+  succ: $and$isw_and_2.v:67$19_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$116:
+  wire $xor$isw_and_2.v:67$20_Y := wire $and$isw_and_2.v:67$19_Y + wire \r20; $auto$simplemap.cc:106:simplemap_bitop$116
+  preds: $and$isw_and_2.v:67$19_Y_0, \r20_0
+  succ: $xor$isw_and_2.v:67$20_Y_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$117:
+  wire \c [2] := wire $xor$isw_and_2.v:67$20_Y + wire \r21; $auto$simplemap.cc:106:simplemap_bitop$117
+  preds: $xor$isw_and_2.v:67$20_Y_0, \r21_0
+  succ: \c_2
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$97:
+  wire \a0b1 := wire \a [0] * wire \b [1]; $auto$simplemap.cc:106:simplemap_bitop$97
+  preds: \a_0, \b_1
+  succ: \a0b1_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$98:
+  wire \a1b0 := wire \a [1] * wire \b [0]; $auto$simplemap.cc:106:simplemap_bitop$98
+  preds: \a_1, \b_0
+  succ: \a1b0_0
+
+HwInstr $auto$simplemap.cc:106:simplemap_bitop$99:
+  wire \a0b2 := wire \a [0] * wire \b [2]; $auto$simplemap.cc:106:simplemap_bitop$99
+  preds: \a_0, \b_2
+  succ: \a0b2_0
+
+Filled wire connection infos:
+WireConnInfo of wire \r21, driven by $auto$simplemap.cc:106:simplemap_bitop$108, used by $auto$simplemap.cc:106:simplemap_bitop$117
+
+WireConnInfo of wire \r20, driven by $auto$simplemap.cc:106:simplemap_bitop$106, used by $auto$simplemap.cc:106:simplemap_bitop$116
+
+WireConnInfo of wire \r12, driven by , used by $auto$simplemap.cc:106:simplemap_bitop$107, $auto$simplemap.cc:106:simplemap_bitop$114
+
+WireConnInfo of wire \r10, driven by $auto$simplemap.cc:106:simplemap_bitop$104, used by $auto$simplemap.cc:106:simplemap_bitop$113
+
+WireConnInfo of wire \r02, driven by , used by $auto$simplemap.cc:106:simplemap_bitop$105, $auto$simplemap.cc:106:simplemap_bitop$111
+
+WireConnInfo of wire \r01, driven by , used by $auto$simplemap.cc:106:simplemap_bitop$103, $auto$simplemap.cc:106:simplemap_bitop$110
+
+WireConnInfo of wire \c[2], driven by $auto$simplemap.cc:106:simplemap_bitop$117, used by 
+
+WireConnInfo of wire \c[1], driven by $auto$simplemap.cc:106:simplemap_bitop$114, used by 
+
+WireConnInfo of wire \c[0], driven by $auto$simplemap.cc:106:simplemap_bitop$111, used by 
+
+WireConnInfo of wire \b[2], driven by , used by $auto$simplemap.cc:106:simplemap_bitop$101, $auto$simplemap.cc:106:simplemap_bitop$115, $auto$simplemap.cc:106:simplemap_bitop$99
+
+WireConnInfo of wire \b[1], driven by , used by $auto$simplemap.cc:106:simplemap_bitop$102, $auto$simplemap.cc:106:simplemap_bitop$112, $auto$simplemap.cc:106:simplemap_bitop$97
+
+WireConnInfo of wire \b[0], driven by , used by $auto$simplemap.cc:106:simplemap_bitop$100, $auto$simplemap.cc:106:simplemap_bitop$109, $auto$simplemap.cc:106:simplemap_bitop$98
+
+WireConnInfo of wire \a2b1, driven by $auto$simplemap.cc:106:simplemap_bitop$102, used by $auto$simplemap.cc:106:simplemap_bitop$108
+
+WireConnInfo of wire \a2b0, driven by $auto$simplemap.cc:106:simplemap_bitop$100, used by $auto$simplemap.cc:106:simplemap_bitop$106
+
+WireConnInfo of wire \a1b2, driven by $auto$simplemap.cc:106:simplemap_bitop$101, used by $auto$simplemap.cc:106:simplemap_bitop$107
+
+WireConnInfo of wire \a1b0, driven by $auto$simplemap.cc:106:simplemap_bitop$98, used by $auto$simplemap.cc:106:simplemap_bitop$104
+
+WireConnInfo of wire \a0b2, driven by $auto$simplemap.cc:106:simplemap_bitop$99, used by $auto$simplemap.cc:106:simplemap_bitop$105
+
+WireConnInfo of wire \a0b1, driven by $auto$simplemap.cc:106:simplemap_bitop$97, used by $auto$simplemap.cc:106:simplemap_bitop$103
+
+WireConnInfo of wire \a[2], driven by , used by $auto$simplemap.cc:106:simplemap_bitop$100, $auto$simplemap.cc:106:simplemap_bitop$102, $auto$simplemap.cc:106:simplemap_bitop$115
+
+WireConnInfo of wire \a[1], driven by , used by $auto$simplemap.cc:106:simplemap_bitop$101, $auto$simplemap.cc:106:simplemap_bitop$112, $auto$simplemap.cc:106:simplemap_bitop$98
+
+WireConnInfo of wire \a[0], driven by , used by $auto$simplemap.cc:106:simplemap_bitop$109, $auto$simplemap.cc:106:simplemap_bitop$97, $auto$simplemap.cc:106:simplemap_bitop$99
+
+WireConnInfo of wire $xor$isw_and_2.v:67$20_Y, driven by $auto$simplemap.cc:106:simplemap_bitop$116, used by $auto$simplemap.cc:106:simplemap_bitop$117
+
+WireConnInfo of wire $xor$isw_and_2.v:66$17_Y, driven by $auto$simplemap.cc:106:simplemap_bitop$113, used by $auto$simplemap.cc:106:simplemap_bitop$114
+
+WireConnInfo of wire $xor$isw_and_2.v:65$14_Y, driven by $auto$simplemap.cc:106:simplemap_bitop$110, used by $auto$simplemap.cc:106:simplemap_bitop$111
+
+WireConnInfo of wire $xor$isw_and_2.v:63$11_Y, driven by $auto$simplemap.cc:106:simplemap_bitop$107, used by $auto$simplemap.cc:106:simplemap_bitop$108
+
+WireConnInfo of wire $xor$isw_and_2.v:62$9_Y, driven by $auto$simplemap.cc:1
