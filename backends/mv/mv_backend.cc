@@ -765,6 +765,23 @@ std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
 }
 
 
+HwVar get_hwvar_from_sigbit(RTLIL::SigBit sigbit, std::string cell_name, std::string port_name) {
+    HwVar ret;
+    log_assert(sigbit.wire != NULL); // should be wire
+    if (sigbit.wire->width == 1) {
+        ret = HwVar::make_single_wire(sigbit.wire->name.c_str());
+    }
+    else if (sigbit.wire->width >= 2) {
+        // multi bit wire
+        ret = HwVar::make_multi_wire(sigbit.wire->name.c_str(), sigbit.offset);
+    }
+    else {
+        log("UNEXPECTED OCCASION: port %s of cell %s has invalid width.\n", port_name.c_str(), cell_name.c_str());
+    }
+    return ret;
+}
+
+
 HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
     HwInstrInfo ret;
     ret.name = cell->name.str();
@@ -940,9 +957,172 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
         ret.instruction = hi;
     }
-    // else if (cell_type == ID($_NAND_)) {}
-    // else if (cell_type == ID($_OR_)) {}
-    // else if (cell_type == ID($_NOR_)) {}
+    else if (cell_type == ID($_NAND_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                if (var_a_bit.wire != NULL) {
+                    if (var_a_bit.wire->width == 1) {
+                        var_a = HwVar::make_single_wire(var_a_bit.wire->name.c_str());
+                    }
+                    else if (var_a_bit.wire->width >= 2) {
+                        var_a = HwVar::make_multi_wire(var_a_bit.wire->name.c_str(), var_a_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input A of NAND cell has invalid width.\n");
+                    }
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input A of NAND cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                if (var_b_bit.wire != NULL) {
+                    if (var_b_bit.wire->width == 1) {
+                        var_b = HwVar::make_single_wire(var_b_bit.wire->name.c_str());
+                    }
+                    else if (var_b_bit.wire->width >= 2) {
+                        var_b = HwVar::make_multi_wire(var_b_bit.wire->name.c_str(), var_b_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input B of NAND cell has invalid width.\n");
+                    }
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input B of NAND cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                if (lhs_bit.wire != NULL) {
+                    if (lhs_bit.wire->width == 1) {
+                        lhs = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+                    }
+                    else if (lhs_bit.wire->width >= 2) {
+                        lhs = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: LHS of NAND cell has invalid width.\n");
+                    }
+                    ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+                else {
+                    log("UNEXPECTED OCCASION: LHS of NAND cell is not wire.\n");
+                }
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary(Operator::MUL, HwExpr::make_var(var_a), HwExpr::make_var(var_b)));
+        }
+    }
+    else if (cell_type == ID($_OR_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                if (var_a_bit.wire != NULL) {
+                    if (var_a_bit.wire->width == 1) {
+                        var_a = HwVar::make_single_wire(var_a_bit.wire->name.c_str());
+                    }
+                    else if (var_a_bit.wire->width >= 2) {
+                        var_a = HwVar::make_multi_wire(var_a_bit.wire->name.c_str(), var_a_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input A of OR cell has invalid width.\n");
+                    }
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input A of OR cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                if (var_b_bit.wire != NULL) {
+                    if (var_b_bit.wire->width == 1) {
+                        var_b = HwVar::make_single_wire(var_b_bit.wire->name.c_str());
+                    }
+                    else if (var_b_bit.wire->width >= 2) {
+                        var_b = HwVar::make_multi_wire(var_b_bit.wire->name.c_str(), var_b_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: input B of OR cell has invalid width.\n");
+                    }
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
+                else {
+                    log("UNEXPECTED OCCASION: input B of OR cell is not wire.\n");
+                }
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                if (lhs_bit.wire != NULL) {
+                    if (lhs_bit.wire->width == 1) {
+                        lhs = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+                    }
+                    else if (lhs_bit.wire->width >= 2) {
+                        lhs = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+                    }
+                    else {
+                        log("UNEXPECTED OCCASION: LHS of OR cell has invalid width.\n");
+                    }
+                    ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+                else {
+                    log("UNEXPECTED OCCASION: LHS of OR cell is not wire.\n");
+                }
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operatro::NEG, HwExpr::make_var(var_b)) ) );
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_NOR_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_NOR_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_NOR_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_NOR_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)) );
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
     else if (cell_type == ID($_XOR_)) {
         HwInstruction hi;
         HwVar lhs;
@@ -1013,11 +1193,224 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
         ret.instruction = hi;
     }
-    // else if (cell_type == ID($_XNOR_)) {}
-    // else if (cell_type == ID($_ANDNOT_)) {}
-    // else if (cell_type == ID($_ORNOT_)) {}
+    else if (cell_type == ID($_XNOR_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_XNOR_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_XNOR_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_XNOR_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary(Operator::ADD, HwExpr::make_var(var_a), HwExpr::make_var(var_b)) );
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_ANDNOT_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_ANDNOT_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_ANDNNOT_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_ANDNOT_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_binary( Operator::MUL, HwExpr::make_var(var_a), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)) );
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_ORNOT_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_ORNOT_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_ORNOT_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_ORNOT_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_var(var_b) ));
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
     // jump $_MUX_, $_NMUX_, $_MUX4_, $_MUX8_, $_MUX16_
-    // TODO: start from line 367, $_AIO3_
+    else if (cell_type == ID($_AOI3_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_AOI3_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_AOI3_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_AOI3_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_AOI3_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            HwExpr nAandB = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_var(var_a), HwExpr::make_var(var_b) ) );
+            rhs = HwExpr::make_binary( Operator::MUL, nAandB, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_c)) );
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_OAI3_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_OAI3_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_OAI3_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_OAI3_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_OAI3_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            HwExpr nnAandnB = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)) ) );
+            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary(Operator::MUL, nnAandnB, HwExpr::make_var(var_c)) );
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_AOI4_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_AOI4_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_AOI4_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_AOI4_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, "$_AOI4_", "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_AOI4_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            HwExpr nAandB = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary(Operator::MUL, HwExpr::make_var(var_a), HwExpr::make_var(var_b)) ); // ~(A&B)
+            HwExpr nCandD = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary(Operator::MUL, HwExpr::make_var(var_c), HwExpr::make_var(var_d)) ); // ~(C&D)
+            rhs = HwExpr::make_binary(Operator::MUL, nAandB, nCandD); // ~(A&B) & ~(C&D)
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if () {}
+    // TODO: start from line , $_
+
     else {
         log("UNEXPECTED OCCASION: UNKNOWN CELL TYPE %s.\n", cell_type.c_str());
     }
