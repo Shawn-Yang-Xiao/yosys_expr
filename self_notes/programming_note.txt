@@ -1,0 +1,31 @@
+struct WireConnInfo{
+    std::string wire_name; // plain name
+    bool with_offset;
+    int offset;
+    std::string driver_inst;
+    std::vector<std::string> user_insts;
+};
+
+    dict<std::string, WireConnInfo> wire_conn_info_dict;
+
+
+// used to implement topological sorting
+struct InstrNode {
+    std::string instr_name;
+    std::vector<std::string> descend_instrs_name; // instrs that use the output of this instr as input
+    int remain_driver;
+    // std::vector<std::string> pred_var_names; // multiple input signals, each corr to a driver instr
+};
+
+
+
+    dict<std::string, HwInstruction> instrs_dict; // used as library of instructions
+
+
+    dict<std::string, InstrNode> instr_node; // support topological sorting, to be modified during sorting
+
+
+
+
+
+

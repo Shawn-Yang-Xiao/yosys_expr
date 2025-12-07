@@ -267,7 +267,6 @@ struct HwModuleDef {
 };
 
 
-const pool<string> mv_keywords();
 
 } // namespace MV_BACKEND
 

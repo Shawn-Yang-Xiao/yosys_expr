@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
 
 #include "kernel/yosys.h"
 #include "kernel/rtlil.h"
@@ -24,21 +25,12 @@ USING_YOSYS_NAMESPACE
 
 using namespace MV_BACKEND; 
 
-const pool<string> MV_BACKEND::mv_keywords() {
-    static const pool<string> res = {
-        // TODO: fill in mv keywords 
-    };
-    return res;
-}
 
 PRIVATE_NAMESPACE_BEGIN
 
 
-// initialize variables
-bool noglitch;
-
 // print structs defined in mv_backend.h
-
+/*
 void dump_hwvar(std::ostream& f, HwVar hv) {
     if (hv.kind == HwVar::VarKind::WIRE) {
         // WIRE
@@ -149,7 +141,7 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
         f << stringf(" =! [");
         dump_hwexpr(f, hi.rhs);
         f << stringf("]; ");
-        f << stringf("%s", hi.name);
+        f << stringf("(* %s *)", hi.name);
     }
     else if (hi.kind == HwInstruction::InstrKind::IK_leak) {
         f << stringf("leak %s(", hi.leak_name);
@@ -167,7 +159,7 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
             }
         }
         f << stringf("); ");
-        f << stringf("%s", hi.name);
+        f << stringf("(* %s *)", hi.name);
     }
     else {
         // IK_mcall
@@ -180,7 +172,7 @@ void dump_hwinstruction(std::ostream& f, HwInstruction hi) {
             dump_hwvar(f, it->second);
         }
         f << stringf("; ");
-        f << stringf("%s", hi.name);
+        f << stringf("(* %s *)", hi.name);
     }
 }
 
@@ -255,10 +247,187 @@ void dump_hwmoduledef(std::ostream& f, HwModuleDef hmd) {
 
     f << stringf("endmodule\n");
 }
+*/
+// TODO: print into mv program, beware of the format
 
-// TODO: print methods for structs defined in mv_backend.h
+std::string to_hex(unsigned char c) {
+    const char hex_chars[] = "0123456789abcdef";
+    std::string ret = std::string(1, hex_chars[(c >> 4) & 0x0F]) + std::string(1, hex_chars[c & 0x0F]);
+    return ret;
+}
 
 
+void nonescaped_identifier(std::ostream& f, std::string id) {
+    size_t start = 0;
+    if (!id.empty() && id[0] == '\\') {
+        start = 1;
+    }
+    for (size_t i = start; i < id.size(); i++) {
+        char c = id[i];
+        if (isalnum(c) || c == '_') {
+            f << c;
+        }
+        else {
+            f << "_0x" << to_hex(c) << "_";
+        }
+    }
+}
+
+
+void dump_mv_hwvar(std::ostream& f, HwVar hv) {
+    if (hv.kind == HwVar::VarKind::WIRE) {
+        std::string wire_name = (hv.wire_name);
+        nonescaped_identifier(f, wire_name);
+        if (hv.with_offset) {
+            f << stringf("[%d]", hv.offset);
+        }
+    }
+    else {
+        // CONST
+        if (hv.const_val) {
+            f << stringf("true");
+        }
+        else {
+            f << stringf("false");
+        }
+    }
+}
+
+
+void dump_mv_operator(std::ostream& f, Operator op) {
+    if (op == Operator::ADD) {
+        f << stringf("+");
+    }
+    else if (op == Operator::MUL) {
+        f << stringf("*");
+    }
+    else if (op == Operator::NEG) {
+        f << stringf("~");
+    }
+    else {
+        // Operator::OTHER
+        f << stringf("OTHER OPERATOR");
+    }
+}
+
+
+void dump_mv_hwexpr(std::ostream& f, HwExpr he) {
+    if(he.type == HwExpr::ExprType::VAR) {
+        dump_mv_hwvar(f, he.var);
+    }
+    else if (he.type == HwExpr::ExprType::OP1) {
+        dump_mv_operator(f, he.op);
+        f << stringf(" ");
+        if ( (he.args[0]).type == HwExpr::ExprType::VAR ) {
+            dump_mv_hwexpr( f, he.args[0] );
+        }
+        else {
+            f << stringf("(");
+            dump_mv_hwexpr( f, he.args[0] );
+            f << stringf(")");
+        }
+    }
+    else if (he.type == HwExpr::ExprType::OP2) {
+        if ( (he.args)[0].type == HwExpr::ExprType::VAR ) {
+            dump_mv_hwexpr( f, he.args[0] );
+        }
+        else {
+            f << stringf("(");
+            dump_mv_hwexpr( f, he.args[0] );
+            f << stringf(")");
+        }
+        f << stringf(" ");
+        dump_mv_operator(f, he.op);
+        f << stringf(" ");
+        if ( (he.args[1]).type == HwExpr::ExprType::VAR ) {
+            dump_mv_hwexpr( f, he.args[1] );
+        }
+        else {
+            f << stringf("(");
+            dump_mv_hwexpr( f, he.args[1] );
+            f << stringf(")");
+        }
+    }
+    else {
+        // HwExpr::ExprType::OPN
+        dump_mv_operator(f, he.op);
+        f << stringf("(");
+        for (auto it = he.args.begin(); it != he.args.end(); it++) {
+            if (it != he.args.begin()) {
+                f << stringf(", ");
+            }
+            if ( (*it).type == HwExpr::ExprType::VAR ) {
+                dump_mv_hwexpr(f, *it);
+            }
+            else {
+                f << stringf("(");
+                dump_mv_hwexpr(f, *it);
+                f << stringf(")");
+            }
+            
+        }
+        f << stringf(")");
+    }
+}
+
+
+void dump_mv_hwinstruction(std::ostream& f, HwInstruction hi) {
+    if(hi.kind == HwInstruction::InstrKind::IK_subst) {
+        dump_mv_hwvar(f, hi.lhs);
+        f << stringf(" := ");
+        dump_mv_hwexpr(f, hi.rhs);
+        f << stringf("; ");
+        f << stringf("(* %s *)", hi.name);
+    }
+    else if (hi.kind == HwInstruction::InstrKind::IK_glitch) {
+        dump_mv_hwvar(f, hi.lhs);
+        f << stringf(" =! [");
+        dump_mv_hwexpr(f, hi.rhs);
+        f << stringf("]; ");
+        f << stringf("(* %s *)", hi.name);
+    }
+    else if (hi.kind == HwInstruction::InstrKind::IK_leak) {
+        f << stringf("leak ");
+        nonescaped_identifier(f, hi.leak_name);
+        f << stringf("(");
+        for(auto it = hi.leak_exprs.begin(); it != hi.leak_exprs.end(); it++) {
+            if (it != hi.leak_exprs.begin()) {
+                f << stringf(", ");
+            }
+            if (it->type == HwExpr::ExprType::VAR) {
+                dump_mv_hwexpr(f, *it);
+            }
+            else{
+                f << stringf("(");
+                dump_mv_hwexpr(f, *it);
+                f << stringf(")");
+            }
+        }
+        f << stringf("); ");
+        f << stringf("(* %s *)", hi.name);
+    }
+    else {
+        // IK_mcall
+        log("UNEXPECTED OCCASION: IK_mcall in MV backend\n");
+    }
+}
+
+
+void dump_mv_hwmoduledef(std::ostream& f, HwModuleDef hmd) {
+    f << stringf("proc ");
+    nonescaped_identifier(f, hmd.module_name);
+    f << stringf(":\n");
+    // not to print ports, they are to be added manually
+    // print instructions
+    for (auto it = hmd.instructions.begin(); it != hmd.instructions.end(); it++) {
+        f << stringf("  ");
+        dump_mv_hwinstruction(f, *it);
+        f << stringf("\n");
+    }
+    f << stringf("end\n");
+}
+
+/*
 std::string hwinstruction_to_string(HwInstruction hi) {
     std::ostringstream oss;
     dump_hwinstruction(oss, hi);
@@ -276,10 +445,19 @@ std::string hwmoduledef_to_string(HwModuleDef hmd) {
     dump_hwmoduledef(oss, hmd);
     return oss.str();
 }
+*/
 
+
+/*
+std::string hwmoduledef_to_mv(HwModuleDef hmd) {
+    std::ostringstream oss;
+    dump_mv_hwmoduledef(oss, hmd);
+    return oss.str();
+}
+*/
 
 // print RTLIL structs
-
+/*
 void print_const(RTLIL::Const data, int width, int offset) {
     if (width < 0) {
         width = data.size() - offset;
@@ -340,11 +518,10 @@ void print_const(RTLIL::Const data, int width, int offset) {
     }
 }
 
-/*
 void print_sigwidth(RTLIL::SigSpec sig) {
     log("SigSpec %s, width %d\n", sig.wire->name.c_str(), sig.size());
 }
-*/
+
 
 void print_sigchunk(const RTLIL::SigChunk chunk){
     if(chunk.wire == NULL) { // distinguish between const and wire
@@ -372,7 +549,7 @@ void print_sigspec(RTLIL::SigSpec sig) {
         print_sigchunk(sig.as_chunk());
     } else {
         log("{ ");
-        for (const auto& chunk : sig.chunks() /*reversed(sig.chunks())*/) {
+        for (const auto& chunk : sig.chunks() ) { //reversed(sig.chunks())
             print_sigchunk(chunk);
             log(" ");
         }
@@ -429,13 +606,13 @@ void print_cell(const RTLIL::Cell *cell) {
     log("\n");
 }
 
-/*
+
 void print_SigSig(std::pair<const RTLIL::SigSpec, RTLIL::SigSpec> sig_pair) {
     log("      first: %s", sig_pair.first.as_string());
     log("      second: %s", sig_pair.second.as_string());
     log("\n");
 }
-*/
+
 
 
 void print_wire(const RTLIL::Wire *wire) {
@@ -469,13 +646,11 @@ void print_module(const RTLIL::Module *module) {
         print_wire(wire_pair.second);
     }
     // print connections in each module
-    /*
-    log("  Connections:\n");
-    for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_pair : connections_of_module) {
+    // log("  Connections:\n");
+    // for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_pair : connections_of_module) {
         // 
-        print_SigSig(conn_pair);
-    }
-    */
+        // print_SigSig(conn_pair);
+    // }
     log("  Connections:\n");
     for (const auto& [lhs, rhs] : module->connections()) { // borrow from rtlil backend
         RTLIL::SigSpec sigs = lhs;
@@ -501,7 +676,7 @@ void print_design(const RTLIL::Design *design){
 
 }
 
-
+*/
 
 std::string hwvar_distinguish_name(HwVar hv) {
     std::string ret;
@@ -518,8 +693,7 @@ struct HwInstrInfo {
     std::string succ_var_name;
 };
 
-// void dump_operator(std::ostream& f, Operator op) {
-
+/*
 void dump_hwinstrinfo(std::ostream& f, HwInstrInfo hii) {
     f << stringf("HwInstr %s:\n", hii.name);
     f << stringf("  ");
@@ -534,7 +708,7 @@ void dump_hwinstrinfo(std::ostream& f, HwInstrInfo hii) {
     f << stringf("\n  succ: ");
     f << stringf("%s\n", hii.succ_var_name);
 }
-
+*/
 
 std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
     std::vector<HwInstrInfo> ret;
@@ -590,18 +764,6 @@ std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
     return ret;
 }
 
-
-/*
-HwInstruction simcell_to_instruction(RTLIL::Cell* cell) { // Add a vector of input signals, and output signal,
-    // generate an instruction from the expr
-    HwInstruction ret;
-    RTLIL::IdString cell_type = cell->type;
-    // find input ports and output port
-    for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
-    }
-    return ret;
-}
-*/
 
 HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
     HwInstrInfo ret;
@@ -873,7 +1035,7 @@ struct WireConnInfo{
     std::vector<std::string> user_insts;
 };
 
-
+/*
 void dump_wireconninfo(std::ostream& f, WireConnInfo wci) {
     f << stringf("WireConnInfo of wire %s", wci.wire_name);
     if (wci.with_offset) {
@@ -888,6 +1050,7 @@ void dump_wireconninfo(std::ostream& f, WireConnInfo wci) {
     }
     f << stringf("\n");
 }
+*/
 
 
 
@@ -931,7 +1094,7 @@ struct InstrNode {
     // std::vector<std::string> pred_var_names; // multiple input signals, each corr to a driver instr
 };
 
-
+/*
 void dump_instrnode(std::ostream& f, InstrNode inode) {
     f << stringf("InstrNode %s: remain_driver %d, descend_instrs ", inode.instr_name, inode.remain_driver);
     for (auto it = inode.descend_instrs_name.begin(); it != inode.descend_instrs_name.end(); it++) {
@@ -942,6 +1105,7 @@ void dump_instrnode(std::ostream& f, InstrNode inode) {
     }
     f << stringf("\n");
 }
+*/
 
 HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
     HwModuleDef ret;
@@ -1021,9 +1185,9 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
             log("UNEXPECTED OCCASION: succ var name %s not found in wire conn info dict.\n", instr_info.succ_var_name.c_str());
         }
 
-        std::ostringstream oss;
-        dump_hwinstrinfo(oss, instr_info);
-        log("%s\n", oss.str());
+        // std::ostringstream oss;
+        // dump_hwinstrinfo(oss, instr_info);
+        // log("%s\n", oss.str());
 
     }
     for (RTLIL::SigSig conn : module->connections()) {
@@ -1051,20 +1215,20 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
             else {
                 log("UNEXPECTED OCCASION: succ var name %s not found in wire conn info dict.\n", instr_info.succ_var_name.c_str());
             }
-            std::ostringstream oss;
-            dump_hwinstrinfo(oss, instr_info);
-            log("%s\n", oss.str());
+            // std::ostringstream oss;
+            // dump_hwinstrinfo(oss, instr_info);
+            // log("%s\n", oss.str());
 
         }
     }
 
 
-    log("Filled wire connection infos:\n");
-    for(auto wcid : wire_conn_info_dict) {
-        std::ostringstream oss;
-        dump_wireconninfo(oss, wcid.second);
-        log("%s\n", oss.str());
-    }
+    // log("Filled wire connection infos:\n");
+    // for(auto wcid : wire_conn_info_dict) {
+    //     std::ostringstream oss;
+    //     dump_wireconninfo(oss, wcid.second);
+    //     log("%s\n", oss.str());
+    // }
 
     // log("Generated instructions in module %s:\n", module->name.c_str());
     // for (auto inst_ele : instrs_dict) {
@@ -1124,12 +1288,36 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
         }
     }
 
-    log("Instruction nodes for topological sorting:\n");
+    // log("Instruction nodes for topological sorting:\n");
+    // for (auto inode_ele : instr_node) {
+    //     std::ostringstream oss;
+    //     dump_instrnode(oss, inode_ele.second);
+    //     log("%s", oss.str());
+    // }
+
+    // topo sort
+    std::queue<std::string> ready_queue;
+
     for (auto inode_ele : instr_node) {
-        std::ostringstream oss;
-        dump_instrnode(oss, inode_ele.second);
-        log("%s", oss.str());
+        if (inode_ele.second.remain_driver == 0) {
+            ready_queue.push(inode_ele.first);
+        }
     }
+
+    while (!ready_queue.empty()) {
+        std::string curr_instr_name = ready_queue.front();
+        ready_queue.pop();
+        // add to instructions of module def
+        ret.instructions.push_back( instrs_dict[curr_instr_name] );
+        // update descend instrs
+        for (std::string desc_instr_name : instr_node[curr_instr_name].descend_instrs_name) {
+            instr_node[desc_instr_name].remain_driver -= 1;
+            if (instr_node[desc_instr_name].remain_driver == 0) {
+                ready_queue.push(desc_instr_name);
+            }
+        }
+    }
+
 
     return ret;
 }
@@ -1142,7 +1330,7 @@ struct MvBackend : public Backend {
     void help() override {
         // TODO: add help message
         log("\n");
-        log("    write_mv [options] [filename]\n");
+        log("    write_mv [filename]\n");
         log("\n");
         log("Generate MV file from RTLIL design for verification.\n");
         log("\n");
@@ -1155,27 +1343,28 @@ struct MvBackend : public Backend {
 
 
         size_t argidx;
-        std::string celllib_file;
 
         for (argidx = 1; argidx < args.size(); argidx++) {
             std::string arg = args[argidx];
-
             // EXTEND: Arguments 
-            cmd_error(args, argidx, "Unknown option or option in arguments.");
+            break;
         }
         
 
         extra_args(f, filename, args, argidx); // write file content to ostream f 
+
+        log("Output filename: %s\n", filename);
         
-        *f << stringf("/* Generated by Yosys_expr based on %s */\n", yosys_maybe_version());
+        *f << stringf("(* Generated by Yosys_expr based on %s *)\n", yosys_maybe_version());
 
         
         // TODO: write framework from design to HwModuleDef
         // there is only one module in simcells design
 
         RTLIL::Module* top_module = design->top_module();
-        module_to_hwmoduledef(top_module);
+        HwModuleDef hmd = module_to_hwmoduledef(top_module);
 
+        dump_mv_hwmoduledef(*f, hmd);
 
 
     }
