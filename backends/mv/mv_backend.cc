@@ -1086,7 +1086,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             else {
                 log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
             }
-            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operatro::NEG, HwExpr::make_var(var_b)) ) );
+            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)) ) );
         }
         std::string instr_name = cell->name.c_str();
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
@@ -1408,9 +1408,189 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
         ret.instruction = hi;
     }
-    else if () {}
-    // TODO: start from line , $_
-
+    else if (cell_type == ID($_OAI4_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_OAI4_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_OAI4_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_OAI4_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, "$_OAI4_", "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_OAI4_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            HwExpr nnAandnB = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)) ) ); // ~( (~A)&(~B) )
+            HwExpr nnCandnD = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_c)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_d)) ) ); // ~( (~C)&(~D) )
+            rhs = HwExpr::make_unary( Operator::NEG, HwExpr::make_binary( Operator::MUL, nnAandnB, nnCandnD ) ); // ~ ( nnAandnB & nnCandnD )
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_TBUF_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_TBUF_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_TBUF_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            rhs = HwExpr::make_var(var_a);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    // trigger units
+    // TODO: they generates empty instruction, maybe need extra process to eliminate the output signal
+    // else if ( cell_type == ID($_SR_NN_) || cell_type == ID($_SR_NP_) || cell_type == ID($_SR_PN_) || cell_type == ID($_SR_PP_) ) {} 
+    else if ( cell_type == ID($_FF_) || cell_type == ID($_DFF_N_) || cell_type == ID($_DFF_P_) || cell_type == ID($_DFFE_NN_) || cell_type == ID($_DFFE_NP_) || cell_type == ID($_DFFE_PN_) || cell_type == ID($_DFFE_PP_) || cell_type == ID($_DFF_NN0_) || cell_type == ID($_DFF_NN1_) || cell_type == ID($_DFF_NP0_) || cell_type == ID($_DFF_NP1_) || cell_type == ID($_DFF_PN0_) || cell_type == ID($_DFF_PN1_) || cell_type == ID($_DFF_PP0_) || cell_type == ID($_DFF_PP1_) || cell_type == ID($_DFFE_NN0N_) || cell_type == ID($_DFFE_NN0P_) || cell_type == ID($_DFFE_NN1N_) || cell_type == ID($_DFFE_NN1P_) || cell_type == ID($_DFFE_NP0N_) || cell_type == ID($_DFFE_NP0P_) || cell_type == ID($_DFFE_NP1N_) || cell_type == ID($_DFFE_NP1P_) || cell_type == ID($_DFFE_PN0N_) || cell_type == ID($_DFFE_PN0P_) || cell_type == ID($_DFFE_PN1N_) || cell_type == ID($_DFFE_PN1P_) || cell_type == ID($_DFFE_PP0N_) || cell_type == ID($_DFFE_PP0P_) || cell_type == ID($_DFFE_PP1N_) || cell_type == ID($_DFFE_PP1P_) ) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Q") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, cell_type.str(), "\\Q");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            rhs = HwExpr::make_var(var_d);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_glitch(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if ( cell_type == ID($_ALDFF_NN_) || cell_type == ID($_ALDFF_PN_) || cell_type == ID($_ALDFF_PP_) || cell_type == ID($_ALDFFE_NNN_) || cell_type == ID($_ALDFFE_NNP_) || cell_type == ID($_ALDFFE_NPN_) || cell_type == ID($_ALDFFE_NPP_) || cell_type == ID($_ALDFFE_PNN_) || cell_type == ID($_ALDFFE_PNP_) || cell_type == ID($_ALDFFE_PPN_) || cell_type == ID($_ALDFFE_PPP_) ) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Q") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, cell_type.str(), "\\Q");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            rhs = HwExpr::make_var(var_d);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_glitch(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if ( cell_type == ID($_DFFSR_NNN_) || cell_type == ID($_DFFSR_NNP_) || cell_type == ID($_DFFSR_NPN_) || cell_type == ID($_DFFSR_NPP_) || cell_type == ID($_DFFSR_PNN_) || cell_type == ID($_DFFSR_PNP_) || cell_type == ID($_DFFSR_PPN_) || cell_type == ID($_DFFSR_PPP_) || cell_type == ID($_DFFSRE_NNNN_) || cell_type == ID($_DFFSRE_NNNP_) || cell_type == ID($_DFFSRE_NNPN_) || cell_type == ID($_DFFSRE_NNPP_) || cell_type == ID($_DFFSRE_NPNN_) || cell_type == ID($_DFFSRE_NPNP_) || cell_type == ID($_DFFSRE_NPPN_) || cell_type == ID($_DFFSRE_NPPP_) || cell_type == ID($_DFFSRE_PNNN_) || cell_type == ID($_DFFSRE_PNNP_) || cell_type == ID($_DFFSRE_PNPN_) || cell_type == ID($_DFFSRE_PNPP_) || cell_type == ID($_DFFSRE_PPNN_) || cell_type == ID($_DFFSRE_PPNP_) || cell_type == ID($_DFFSRE_PPPN_) || cell_type == ID($_DFFSRE_PPPP_) ) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Q") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, cell_type.str(), "\\Q");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            rhs = HwExpr::make_var(var_d);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_glitch(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if ( cell_type == ID($_SDFF_NN0_) || cell_type == ID($_SDFF_NN1_) || cell_type == ID($_SDFF_NP0_) || cell_type == ID($_SDFF_NP1_) || cell_type == ID($_SDFF_PN0_) || cell_type == ID($_SDFF_PN1_) || cell_type == ID($_SDFF_PP0_) || cell_type == ID($_SDFF_PP0_) || cell_type == ID($_SDFF_PP1_) || cell_type == ID($_SDFFE_NN0N_) || cell_type == ID($_SDFFE_NN0P_) || cell_type == ID($_SDFFE_NN1N_) || cell_type == ID($_SDFFE_NN1P_) || cell_type == ID($_SDFFE_NP0N_) || cell_type == ID($_SDFFE_NP0P_) || cell_type == ID($_SDFFE_NP1N_) || cell_type == ID($_SDFFE_NP1P_) || cell_type == ID($_SDFFE_PN0N_) || cell_type == ID($_SDFFE_PN0P_) || cell_type == ID($_SDFFE_PN1N_) || cell_type == ID($_SDFFE_PN1P_) || cell_type == ID($_SDFFE_PP0N_) || cell_type == ID($_SDFFE_PP0P_) || cell_type == ID($_SDFFE_PP1N_) || cell_type == ID($_SDFFE_PP1P_) || cell_type == ID($_SDFFCE_NN0N_) || cell_type == ID($_SDFFCE_NN0P_) || cell_type == ID($_SDFFCE_NN1N_) || cell_type == ID($_SDFFCE_NN1P_) || cell_type == ID($_SDFFCE_NP0N_) || cell_type == ID($_SDFFCE_NP0P_) || cell_type == ID($_SDFFCE_NP1N_) || cell_type == ID($_SDFFCE_PN0N_) || cell_type == ID($_SDFFCE_PN0P_) || cell_type == ID($_SDFFCE_PN1N_) || cell_type == ID($_SDFFCE_PN1P_) || cell_type == ID($_SDFFCE_PP0N_) || cell_type == ID($_SDFFCE_PP0P_) || cell_type == ID($_SDFFCE_PP1N_) || cell_type == ID($_SDFFCE_PP1P_) ) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Q") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, cell_type.str(), "\\Q");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            rhs = HwExpr::make_var(var_d);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_glitch(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if ( cell_type == ID($_DLATCH_N_) || cell_type == ID($_DLATCH_P_) || cell_type == ID($_DLATCH_NN0_) || cell_type == ID($_DLATCH_NN1_) || cell_type == ID($_DLATCH_NP0) || cell_type == ID($_DLATCH_NP1_) || cell_type == ID($_DLATCH_PN0_) || cell_type == ID($_DLATCH_PN1_) || cell_type == ID($_DLATCH_PP0_) || cell_type == ID($_DLATCH_PP1_) || cell_type == ID($_DLATCHSR_NNN_) || cell_type == ID($_DLATCHSR_NNP_) || cell_type == ID($_DLATCHSR_NPN_) || cell_type == ID($_DLATCHSR_NPP_) || cell_type == ID($_DLATCHSR_PNN_) || cell_type == ID($_DLATCHSR_PNP_) || cell_type == ID($_DLATCHSR_PPN_) || cell_type == ID($_DLATCHSR_PPP_) ) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_d;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\Q") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, cell_type.str(), "\\Q");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            rhs = HwExpr::make_var(var_d);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_glitch(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
     else {
         log("UNEXPECTED OCCASION: UNKNOWN CELL TYPE %s.\n", cell_type.c_str());
     }
@@ -1554,6 +1734,12 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
 
     for (std::pair<RTLIL::IdString, RTLIL::Cell *> cell_pair : module->cells_) {
         RTLIL::Cell* cell = cell_pair.second;
+
+        // jump $scopeinfo cells
+        if (cell->type.str() == "$scopeinfo") {
+            continue;
+        }
+
         auto instr_info = simcell_to_instruction(cell);
         if (instrs_dict.count(instr_info.name) != 0) {
             log("UNEXPECTED OCCASION: Instruction %s already exists in module %s, overwriting.\n", instr_info.name, module->name.c_str());
