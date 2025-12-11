@@ -38,6 +38,10 @@ enum class Operator {
     ADD,    // bit xor
     MUL,    // bit and
     NEG,
+    MUX,    // $_MUX_ and $_NMUX_ to #_MUX_
+    MUX4,   // $_MUX4_ to #_MUX4_
+    MUX8,
+    MUX16,
     OTHER
 };
 

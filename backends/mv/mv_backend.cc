@@ -304,9 +304,25 @@ void dump_mv_operator(std::ostream& f, Operator op) {
     else if (op == Operator::NEG) {
         f << stringf("~");
     }
+    else if (op == Operator::MUX) {
+        f << stringf("#_MUX_");
+    }
+    else if (op == Operator::MUX4) {
+        f << stringf("#_MUX4_");
+    }
+    else if (op == Operator::MUX8) {
+        f << stringf("#_MUX8_");
+    }
+    else if (op == Operator::MUX16) {
+        f << stringf("#_MUX16_");
+    }
+    // EXTEND: to extend new operators
+    else if (op == Operator::OTHER) {
+        f << stringf("OTHER");
+    }
     else {
-        // Operator::OTHER
-        f << stringf("OTHER OPERATOR");
+        // unkown operator
+        f << stringf("FAULT: UNSET OPERATOR PRINT METHOD\n");
     }
 }
 
@@ -1286,7 +1302,364 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
         ret.instruction = hi;
     }
-    // jump $_MUX_, $_NMUX_, $_MUX4_, $_MUX8_, $_MUX16_
+    else if (cell_type == ID($_MUX_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_s_mux;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\S") {
+                RTLIL::SigBit var_s_bit = conn.second.bits()[0];
+                var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX_", "\\S");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_MUX_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            std::vector<HwExpr> rhs_operands = { HwExpr::make_var(var_a), HwExpr::make_var(var_b), HwExpr::make_var(var_s_mux) };
+            rhs = HwExpr::make_nary(Operator::MUX, rhs_operands);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_NMUX_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_s_mux;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_NMUX_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_NMUX_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\S") {
+                RTLIL::SigBit var_s_bit = conn.second.bits()[0];
+                var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_NMUX_", "\\S");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_NMUX_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            std::vector<HwExpr> rhs_operands = { HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)), HwExpr::make_var(var_s_mux) };
+            rhs = HwExpr::make_nary(Operator::MUX, rhs_operands);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_MUX4_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        HwVar var_d;
+        HwVar var_s_mux;
+        HwVar var_t_mux;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX4_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX4_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_MUX4_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, "$_MUX4_", "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\S") {
+                RTLIL::SigBit var_s_bit = conn.second.bits()[0];
+                var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX4_", "\\S");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+            }
+            else if (conn.first == "\\T") {
+                RTLIL::SigBit var_t_bit = conn.second.bits()[0];
+                var_t_mux = get_hwvar_from_sigbit(var_t_bit, "$_MUX4_", "\\T");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_MUX4_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            std::vector<HwExpr> rhs_operands = { HwExpr::make_var(var_a), HwExpr::make_var(var_b), HwExpr::make_var(var_c), HwExpr::make_var(var_d), HwExpr::make_var(var_s_mux), HwExpr::make_var(var_t_mux) };
+            rhs = HwExpr::make_nary(Operator::MUX4, rhs_operands);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_MUX8_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        HwVar var_d;
+        HwVar var_e;
+        HwVar var_f;
+        HwVar var_g;
+        HwVar var_h;
+        HwVar var_s_mux;
+        HwVar var_t_mux;
+        HwVar var_u_mux;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX8_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX8_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_MUX8_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, "$_MUX8_", "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\E") {
+                RTLIL::SigBit var_e_bit = conn.second.bits()[0];
+                var_e = get_hwvar_from_sigbit(var_e_bit, "$_MUX8_", "\\E");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_e));
+            }
+            else if (conn.first == "\\F") {
+                RTLIL::SigBit var_f_bit = conn.second.bits()[0];
+                var_f = get_hwvar_from_sigbit(var_f_bit, "$_MUX8_", "\\F");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_f));
+            }
+            else if (conn.first == "\\G") {
+                RTLIL::SigBit var_g_bit = conn.second.bits()[0];
+                var_g = get_hwvar_from_sigbit(var_g_bit, "$_MUX8_", "\\G");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_g));
+            }
+            else if (conn.first == "\\H") {
+                RTLIL::SigBit var_h_bit = conn.second.bits()[0];
+                var_h = get_hwvar_from_sigbit(var_h_bit, "$_MUX8_", "\\H");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_h));
+            }
+            else if (conn.first == "\\S") {
+                RTLIL::SigBit var_s_bit = conn.second.bits()[0];
+                var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX8_", "\\S");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+            }
+            else if (conn.first == "\\T") {
+                RTLIL::SigBit var_t_bit = conn.second.bits()[0];
+                var_t_mux = get_hwvar_from_sigbit(var_t_bit, "$_MUX8_", "\\T");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+            }
+            else if (conn.first == "\\U") {
+                RTLIL::SigBit var_u_bit = conn.second.bits()[0];
+                var_u_mux = get_hwvar_from_sigbit(var_u_bit, "$_MUX8_", "\\U");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_u_mux));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_MUX8_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            std::vector<HwExpr> rhs_operands = { HwExpr::make_var(var_a), HwExpr::make_var(var_b), HwExpr::make_var(var_c), HwExpr::make_var(var_d), HwExpr::make_var(var_e), HwExpr::make_var(var_f), HwExpr::make_var(var_g), HwExpr::make_var(var_h), HwExpr::make_var(var_s_mux), HwExpr::make_var(var_t_mux), HwExpr::make_var(var_u_mux) };
+            rhs = HwExpr::make_nary(Operator::MUX8, rhs_operands);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
+    else if (cell_type == ID($_MUX16_)) {
+        HwInstruction hi;
+        HwVar lhs;
+        HwExpr rhs;
+        HwVar var_a;
+        HwVar var_b;
+        HwVar var_c;
+        HwVar var_d;
+        HwVar var_e;
+        HwVar var_f;
+        HwVar var_g;
+        HwVar var_h;
+        HwVar var_i;
+        HwVar var_j;
+        HwVar var_k;
+        HwVar var_l;
+        HwVar var_m;
+        HwVar var_n;
+        HwVar var_o;
+        HwVar var_p;
+        HwVar var_s_mux;
+        HwVar var_t_mux;
+        HwVar var_u_mux;
+        HwVar var_v_mux;
+        for (std::pair<RTLIL::IdString, RTLIL::SigSpec> conn : cell->connections_) {
+            if (conn.first == "\\A") {
+                RTLIL::SigBit var_a_bit = conn.second.bits()[0];
+                var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX16_", "\\A");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+            }
+            else if (conn.first == "\\B") {
+                RTLIL::SigBit var_b_bit = conn.second.bits()[0];
+                var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX16_", "\\B");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+            }
+            else if (conn.first == "\\C") {
+                RTLIL::SigBit var_c_bit = conn.second.bits()[0];
+                var_c = get_hwvar_from_sigbit(var_c_bit, "$_MUX16_", "\\C");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+            }
+            else if (conn.first == "\\D") {
+                RTLIL::SigBit var_d_bit = conn.second.bits()[0];
+                var_d = get_hwvar_from_sigbit(var_d_bit, "$_MUX16_", "\\D");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+            }
+            else if (conn.first == "\\E") {
+                RTLIL::SigBit var_e_bit = conn.second.bits()[0];
+                var_e = get_hwvar_from_sigbit(var_e_bit, "$_MUX16_", "\\E");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_e));
+            } 
+            else if (conn.first == "\\F") {
+                RTLIL::SigBit var_f_bit = conn.second.bits()[0];
+                var_f = get_hwvar_from_sigbit(var_f_bit, "$_MUX16_", "\\F");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_f));
+            }
+            else if (conn.first == "\\G") {
+                RTLIL::SigBit var_g_bit = conn.second.bits()[0];
+                var_g = get_hwvar_from_sigbit(var_g_bit, "$_MUX16_", "\\G");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_g));
+            }
+            else if (conn.first == "\\H") {
+                RTLIL::SigBit var_h_bit = conn.second.bits()[0];
+                var_h = get_hwvar_from_sigbit(var_h_bit, "$_MUX16_", "\\H");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_h));
+            }
+            else if (conn.first == "\\I") {
+                RTLIL::SigBit var_i_bit = conn.second.bits()[0];
+                var_i = get_hwvar_from_sigbit(var_i_bit, "$_MUX16_", "\\I");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_i));
+            }
+            else if (conn.first == "\\J") {
+                RTLIL::SigBit var_j_bit = conn.second.bits()[0];
+                var_j = get_hwvar_from_sigbit(var_j_bit, "$_MUX16_", "\\J");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_j));
+            }
+            else if (conn.first == "\\K") {
+                RTLIL::SigBit var_k_bit = conn.second.bits()[0];
+                var_k = get_hwvar_from_sigbit(var_k_bit, "$_MUX16_", "\\K");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_k));
+            }
+            else if (conn.first == "\\L") {
+                RTLIL::SigBit var_l_bit = conn.second.bits()[0];
+                var_l = get_hwvar_from_sigbit(var_l_bit, "$_MUX16_", "\\L");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_l));
+            }
+            else if (conn.first == "\\M") {
+                RTLIL::SigBit var_m_bit = conn.second.bits()[0];
+                var_m = get_hwvar_from_sigbit(var_m_bit, "$_MUX16_", "\\M");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_m));
+            }
+            else if (conn.first == "\\N") {
+                RTLIL::SigBit var_n_bit = conn.second.bits()[0];
+                var_n = get_hwvar_from_sigbit(var_n_bit, "$_MUX16_", "\\N");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_n));
+            }
+            else if (conn.first == "\\O") {
+                RTLIL::SigBit var_o_bit = conn.second.bits()[0];
+                var_o = get_hwvar_from_sigbit(var_o_bit, "$_MUX16_", "\\O");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_o));
+            }
+            else if (conn.first == "\\P") {
+                RTLIL::SigBit var_p_bit = conn.second.bits()[0];
+                var_p = get_hwvar_from_sigbit(var_p_bit, "$_MUX16_", "\\P");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_p));
+            }
+            else if (conn.first == "\\S") {
+                RTLIL::SigBit var_s_bit = conn.second.bits()[0];
+                var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX16_", "\\S");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+            }
+            else if (conn.first == "\\T") {
+                RTLIL::SigBit var_t_bit = conn.second.bits()[0];
+                var_t_mux = get_hwvar_from_sigbit(var_t_bit, "$_MUX16_", "\\T");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+            }
+            else if (conn.first == "\\U") {
+                RTLIL::SigBit var_u_bit = conn.second.bits()[0];
+                var_u_mux = get_hwvar_from_sigbit(var_u_bit, "$_MUX16_", "\\U");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_u_mux));
+            }
+            else if (conn.first == "\\V") {
+                RTLIL::SigBit var_v_bit = conn.second.bits()[0];
+                var_v_mux = get_hwvar_from_sigbit(var_v_bit, "$_MUX16_", "\\V");
+                ret.pred_var_names.insert(hwvar_distinguish_name(var_v_mux));
+            }
+            else if (conn.first == "\\Y") {
+                RTLIL::SigBit lhs_bit = conn.second.bits()[0];
+                lhs = get_hwvar_from_sigbit(lhs_bit, "$_MUX16_", "\\Y");
+                ret.succ_var_name = hwvar_distinguish_name(lhs);
+            }
+            else {
+                log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
+            }
+            std::vector<HwExpr> rhs_operands = { HwExpr::make_var(var_a), HwExpr::make_var(var_b), HwExpr::make_var(var_c), HwExpr::make_var(var_d), HwExpr::make_var(var_e), HwExpr::make_var(var_f), HwExpr::make_var(var_g), HwExpr::make_var(var_h), HwExpr::make_var(var_i), HwExpr::make_var(var_j), HwExpr::make_var(var_k), HwExpr::make_var(var_l), HwExpr::make_var(var_m), HwExpr::make_var(var_n), HwExpr::make_var(var_o), HwExpr::make_var(var_p), HwExpr::make_var(var_s_mux), HwExpr::make_var(var_t_mux), HwExpr::make_var(var_u_mux), HwExpr::make_var(var_v_mux) };
+            rhs = HwExpr::make_nary(Operator::MUX16, rhs_operands);
+        }
+        std::string instr_name = cell->name.c_str();
+        hi = HwInstruction::make_subst(instr_name, lhs, rhs);
+        ret.instruction = hi;
+    }
     else if (cell_type == ID($_AOI3_)) {
         HwInstruction hi;
         HwVar lhs;
@@ -1897,6 +2270,12 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
         }
     }
 
+    int instr_dict_len = instrs_dict.size();
+    int result_instr_len = ret.instructions.size();
+
+    if (instr_dict_len != result_instr_len) {
+        log("ERROR POSSIBLE: LIKELY LOOP EXIST IN INSTRUCTION DESCENDENT RELATIONS.\n");
+    }
 
     return ret;
 }
