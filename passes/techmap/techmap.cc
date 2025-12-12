@@ -1241,7 +1241,7 @@ struct TechmapPass : public Pass {
 				}
 		}
 
-		
+		/*
 		// print the design
 		log("===================== Print techmap ======================\n");
 		dict<RTLIL::IdString, RTLIL::Module*> modules_of_map = map->modules_;
@@ -1265,6 +1265,7 @@ struct TechmapPass : public Pass {
 			}
 		}
 		log("=========================================================\n");
+		*/
 		
 
 		log_header(design, "Continuing TECHMAP pass.\n");
