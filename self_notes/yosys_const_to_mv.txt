@@ -1,0 +1,34 @@
+        RTLIL::SigBit rhs_bit = rhs_bits[i];
+
+
+
+Yosys当中const如何存储？
+
+从打印方法来看使用
+void print_const(RTLIL::Const data, int width, int offset)
+
+在打印sigchunk中调用打印const
+
+现在我们需要在unpack的bits_当中打印const信息
+
+
+从上到下先从struct RTLIL::SigSpec开始
+
+RTLIL::SigBit s.data == S0 false, s.data == S1 true
+
+如果SigBit是一个常数，那么
+
+struct HwInstrInfo {
+    std::string name;   用lhs的distinguishable name
+    HwInstruction instruction;     
+    std::set<std::string> pred_var_names;   对于const而言，这是一个空集合
+    std::string succ_var_name;       lhs的distinguishable name
+};
+
+
+在module_to_hwmoduledef当中，for (RTLIL::SigSig conn : module->connections()) 
+没有前序信号用于添加user_inst，不会带来问题
+
+
+
+

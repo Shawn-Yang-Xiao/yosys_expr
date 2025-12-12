@@ -473,7 +473,7 @@ std::string hwmoduledef_to_mv(HwModuleDef hmd) {
 */
 
 // print RTLIL structs
-/*
+
 void print_const(RTLIL::Const data, int width, int offset) {
     if (width < 0) {
         width = data.size() - offset;
@@ -532,10 +532,6 @@ void print_const(RTLIL::Const data, int width, int offset) {
 		}
 		log("\"");
     }
-}
-
-void print_sigwidth(RTLIL::SigSpec sig) {
-    log("SigSpec %s, width %d\n", sig.wire->name.c_str(), sig.size());
 }
 
 
@@ -692,7 +688,7 @@ void print_design(const RTLIL::Design *design){
 
 }
 
-*/
+
 
 std::string hwvar_distinguish_name(HwVar hv) {
     std::string ret;
@@ -753,24 +749,40 @@ std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
         
         // right hand side
         RTLIL::SigBit rhs_bit = rhs_bits[i];
-        log_assert(rhs_bit.wire != NULL); // should be wire
+        // log_assert(rhs_bit.wire != NULL); // should be wire
         HwVar hv_rhs;
-        if (rhs_bit.wire->width == 1) {
-            hv_rhs = HwVar::make_single_wire(rhs_bit.wire->name.c_str());
-        }
-        else if (rhs_bit.wire->width >= 2) {
-            // multi bit wire
-            hv_rhs = HwVar::make_multi_wire(rhs_bit.wire->name.c_str(), rhs_bit.offset);
+        // pred var names
+        std::set<std::string> pred_names;
+        // TODO: add support for const 
+        if (rhs_bit.wire == NULL) {
+            // const
+            if (rhs_bit.data == RTLIL::State::S0) {
+                hv_rhs = HwVar::make_const(false);
+            }
+            else if (rhs_bit.data == RTLIL::State::S1) {
+                hv_rhs = HwVar::make_const(true);
+            }
+            else {
+                log("UNEXPECTED OCCASION: connect RHS const has invalid value.\n");
+            }
         }
         else {
-            log("UNEXPECTED OCCASION: connect RHS wire has invalid width.\n");
+            if (rhs_bit.wire->width == 1) {
+                hv_rhs = HwVar::make_single_wire(rhs_bit.wire->name.c_str());
+            }
+            else if (rhs_bit.wire->width >= 2) {
+                // multi bit wire
+                hv_rhs = HwVar::make_multi_wire(rhs_bit.wire->name.c_str(), rhs_bit.offset);
+            }
+            else {
+                log("UNEXPECTED OCCASION: connect RHS wire has invalid width.\n");
+            }
+            pred_names.insert( hwvar_distinguish_name(hv_rhs) );
         }
         std::string instr_name = hwvar_distinguish_name(hv_lhs);
         hi = HwInstruction::make_subst(instr_name, hv_lhs, HwExpr::make_var(hv_rhs));
         // generate name for the instruction, use lhs wire name and index
-        // pred var names
-        std::set<std::string> pred_names;
-        pred_names.insert( hwvar_distinguish_name(hv_rhs) );
+        
         // succ var name
         std::string succ_name = hwvar_distinguish_name(hv_lhs);
 
@@ -2040,7 +2052,7 @@ struct InstrNode {
     // std::vector<std::string> pred_var_names; // multiple input signals, each corr to a driver instr
 };
 
-/*
+
 void dump_instrnode(std::ostream& f, InstrNode inode) {
     f << stringf("InstrNode %s: remain_driver %d, descend_instrs ", inode.instr_name, inode.remain_driver);
     for (auto it = inode.descend_instrs_name.begin(); it != inode.descend_instrs_name.end(); it++) {
@@ -2051,7 +2063,7 @@ void dump_instrnode(std::ostream& f, InstrNode inode) {
     }
     f << stringf("\n");
 }
-*/
+
 
 HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
     HwModuleDef ret;
@@ -2142,6 +2154,7 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
         // log("%s\n", oss.str());
 
     }
+    // generate instrucstions from connections
     for (RTLIL::SigSig conn : module->connections()) {
         auto conn_instrs_infos = connect_to_instruction(conn);
         for (auto instr_info : conn_instrs_infos) { 
@@ -2275,6 +2288,14 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
 
     if (instr_dict_len != result_instr_len) {
         log("ERROR POSSIBLE: LIKELY LOOP EXIST IN INSTRUCTION DESCENDENT RELATIONS.\n");
+        // dump remaining instructions
+        for (std::pair<std::string, InstrNode> instr_dict_ele : instr_node ) {
+            if (instr_dict_ele.second.remain_driver != 0) {
+                std::ostringstream oss;
+                dump_instrnode(oss, instr_dict_ele.second);
+                log("%s\n", oss.str());
+            }
+        }
     }
 
     return ret;

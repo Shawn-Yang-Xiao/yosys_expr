@@ -1,0 +1,135 @@
+
+11. Executing MV backend.
+Output filename: ./output/aes_sbox_dom.mv
+Generated instructions in module \aes_sbox_dom:
+ERROR POSSIBLE: LIKELY LOOP EXIST IN INSTRUCTION DESCENDENT RELATIONS.
+InstrNode $auto$ff.cc:266:slice$1657: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1645, $auto$simplemap.cc:106:simplemap_bitop$1648, $auto$simplemap.cc:106:simplemap_bitop$1651, $auto$simplemap.cc:46:simplemap_not$1396
+
+InstrNode $auto$ff.cc:266:slice$1658: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1397, $auto$simplemap.cc:106:simplemap_bitop$1635, $auto$simplemap.cc:106:simplemap_bitop$1641, $auto$simplemap.cc:46:simplemap_not$1636
+
+InstrNode $auto$ff.cc:266:slice$1890: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1397, $auto$simplemap.cc:106:simplemap_bitop$1637, $auto$simplemap.cc:106:simplemap_bitop$1641, $auto$simplemap.cc:46:simplemap_not$1634
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1397: remain_driver 2, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1398, $auto$simplemap.cc:106:simplemap_bitop$1645
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1398: remain_driver 2, descend_instrs $auto$simplemap.cc:46:simplemap_not$1399
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1400: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1631, $auto$simplemap.cc:298:simplemap_mux$1401
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1631: remain_driver 1, descend_instrs $auto$simplemap.cc:46:simplemap_not$1632
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1633: remain_driver 2, descend_instrs $auto$ff.cc:266:slice$1890
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1635: remain_driver 2, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1638, $auto$simplemap.cc:106:simplemap_bitop$1648
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1637: remain_driver 2, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1638, $auto$simplemap.cc:106:simplemap_bitop$1651
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1638: remain_driver 2, descend_instrs $auto$simplemap.cc:46:simplemap_not$1639
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1640: remain_driver 2, descend_instrs $auto$ff.cc:266:slice$1658
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1641: remain_driver 2, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1642, $auto$simplemap.cc:106:simplemap_bitop$1654
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1642: remain_driver 2, descend_instrs $auto$simplemap.cc:46:simplemap_not$1643
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1644: remain_driver 2, descend_instrs $auto$ff.cc:266:slice$1657
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1645: remain_driver 2, descend_instrs $auto$simplemap.cc:46:simplemap_not$1646
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1647: remain_driver 1, descend_instrs \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_y1_y0.u_prim_xilinx_flop_ab_yz0.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_y1_y0.u_prim_xilinx_flop_abxz0_z1.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_y1_y0.we_i_0, \u_aes_dom_inverse_gf2p8.u_prim_xilinx_flop_ab_y_ss.en_i_0, \u_aes_dom_inverse_gf2p8.we_i_0, \we_0
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1648: remain_driver 2, descend_instrs $auto$simplemap.cc:46:simplemap_not$1649
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1650: remain_driver 1, descend_instrs \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_gamma1_gamma0.u_prim_xilinx_flop_abxz0_z1.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_gamma1_gamma0.we_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_prim_xilinx_flop_ab_gamma10.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_prim_xilinx_flop_ab_gamma_ss.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.we_i_0, \u_aes_dom_inverse_gf2p8.we_i_1, \we_1
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1651: remain_driver 2, descend_instrs $auto$simplemap.cc:46:simplemap_not$1652
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1653: remain_driver 1, descend_instrs \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.gen_prim_xilinx_flop_omega_gamma10.u_prim_xilinx_flop_ab_omega_buf.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma0.u_prim_xilinx_flop_ab_yz0.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma0.u_prim_xilinx_flop_abxz0_z1.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma0.we_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma1.u_prim_xilinx_flop_ab_yz0.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma1.u_prim_xilinx_flop_abxz0_z1.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma1.we_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.we_i_1, \u_aes_dom_inverse_gf2p8.u_prim_xilinx_flop_ab_y10_qqq.en_i_0, \u_aes_dom_inverse_gf2p8.we_i_2, \we_2
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1654: remain_driver 2, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1655
+
+InstrNode $auto$simplemap.cc:106:simplemap_bitop$1655: remain_driver 1, descend_instrs \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y0.u_prim_xilinx_flop_abq_z0.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y0.we_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y1.gen_pipeline.u_prim_xilinx_flop_mul_abx_aby.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y1.u_prim_xilinx_flop_abq_z0.en_i_0, \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y1.we_i_0, \u_aes_dom_inverse_gf2p8.we_i_3, \we_3
+
+InstrNode $auto$simplemap.cc:298:simplemap_mux$1401: remain_driver 1, descend_instrs 
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1396: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1398, $auto$simplemap.cc:106:simplemap_bitop$1642, $auto$simplemap.cc:106:simplemap_bitop$1654
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1399: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1400
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1632: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1633, $auto$simplemap.cc:106:simplemap_bitop$1640, $auto$simplemap.cc:106:simplemap_bitop$1644
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1634: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1633, $auto$simplemap.cc:106:simplemap_bitop$1635
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1636: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1637
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1639: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1640
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1643: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1644
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1646: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1647
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1649: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1650
+
+InstrNode $auto$simplemap.cc:46:simplemap_not$1652: remain_driver 1, descend_instrs $auto$simplemap.cc:106:simplemap_bitop$1653
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.gen_prim_xilinx_flop_omega_gamma10.u_prim_xilinx_flop_ab_omega_buf.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_gamma1_gamma0.u_prim_xilinx_flop_abxz0_z1.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_gamma1_gamma0.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma0.u_prim_xilinx_flop_ab_yz0.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma0.u_prim_xilinx_flop_abxz0_z1.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma0.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma1.u_prim_xilinx_flop_ab_yz0.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma1.u_prim_xilinx_flop_abxz0_z1.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_aes_dom_mul_omega_gamma1.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_prim_xilinx_flop_ab_gamma10.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.u_prim_xilinx_flop_ab_gamma_ss.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_inverse_gf2p4.we_i_1: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y0.u_prim_xilinx_flop_abq_z0.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y0.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y1.gen_pipeline.u_prim_xilinx_flop_mul_abx_aby.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y1.u_prim_xilinx_flop_abq_z0.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_theta_y1.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_y1_y0.u_prim_xilinx_flop_ab_yz0.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_y1_y0.u_prim_xilinx_flop_abxz0_z1.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_aes_dom_mul_y1_y0.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_prim_xilinx_flop_ab_y10_qqq.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.u_prim_xilinx_flop_ab_y_ss.en_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.we_i_0: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.we_i_1: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.we_i_2: remain_driver 1, descend_instrs 
+
+InstrNode \u_aes_dom_inverse_gf2p8.we_i_3: remain_driver 1, descend_instrs 
+
+InstrNode \we_0: remain_driver 1, descend_instrs 
+
+InstrNode \we_1: remain_driver 1, descend_instrs 
+
+InstrNode \we_2: remain_driver 1, descend_instrs 
+
+InstrNode \we_3: remain_driver 1, descend_instrs 
+
