@@ -285,10 +285,10 @@ void dump_mv_hwvar(std::ostream& f, HwVar hv) {
     else {
         // CONST
         if (hv.const_val) {
-            f << stringf("true");
+            f << stringf("(0b1 : bool)");
         }
         else {
-            f << stringf("false");
+            f << stringf("(0b0 : bool)");
         }
     }
 }
@@ -795,17 +795,31 @@ std::vector<HwInstrInfo> connect_to_instruction(RTLIL::SigSig conn) {
 
 HwVar get_hwvar_from_sigbit(RTLIL::SigBit sigbit, std::string cell_name, std::string port_name) {
     HwVar ret;
-    log_assert(sigbit.wire != NULL); // should be wire
-    if (sigbit.wire->width == 1) {
-        ret = HwVar::make_single_wire(sigbit.wire->name.c_str());
-    }
-    else if (sigbit.wire->width >= 2) {
-        // multi bit wire
-        ret = HwVar::make_multi_wire(sigbit.wire->name.c_str(), sigbit.offset);
+    if (sigbit.wire == NULL) {
+        if (sigbit.data == RTLIL::State::S0) {
+            ret = HwVar::make_const(false);
+        }
+        else if (sigbit.data == RTLIL::State::S1) {
+            ret = HwVar::make_const(true);
+        }
+        else {
+            log("UNEXPECTED OCCASION: connect RHS const has invalid value.\n");
+        }
     }
     else {
-        log("UNEXPECTED OCCASION: port %s of cell %s has invalid width.\n", port_name.c_str(), cell_name.c_str());
+        // sigbit.wire != NULL
+        if (sigbit.wire->width == 1) {
+            ret = HwVar::make_single_wire(sigbit.wire->name.c_str());
+        }
+        else if (sigbit.wire->width >= 2) {
+            // multi bit wire
+            ret = HwVar::make_multi_wire(sigbit.wire->name.c_str(), sigbit.offset);
+        }
+        else {
+            log("UNEXPECTED OCCASION: port %s of cell %s has invalid width.\n", port_name.c_str(), cell_name.c_str());
+        }
     }
+    
     return ret;
 }
 
@@ -838,7 +852,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(rhs_var));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: RHS of BUF cell is not wire.\n");
+                    HwVar rhs_var;
+                    rhs_var = get_hwvar_from_sigbit(rhs_bit,"$_BUF_", "\\A");
+                    rhs = HwExpr::make_var(rhs_var);
                 }
             }
             else if (conn.first == "\\Y") {
@@ -889,7 +905,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(rhs_var));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: RHS of NOT cell is not wire.\n");
+                    HwVar rhs_var;
+                    rhs_var = get_hwvar_from_sigbit(rhs_bit,"$_NOT_", "\\A");
+                    rhs = HwExpr::make_var(rhs_var);
                 }
             }
             else if (conn.first == "\\Y") {
@@ -905,6 +923,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                         log("UNEXPECTED OCCASION: LHS of NOT cell has invalid width.\n");
                     }
                     ret.succ_var_name = hwvar_distinguish_name(lhs);
+                }
+                else {
+                    log("UNEXPECTED OCCASION: LHS of NOT cell is not wire.\n");
                 }
             }
             else {
@@ -937,7 +958,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input A of AND cell is not wire.\n");
+                    var_a = get_hwvar_from_sigbit(var_a_bit,"$_AND_", "\\A");
                 }
             }
             else if (conn.first == "\\B") {
@@ -955,7 +976,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input B of AND cell is not wire.\n");
+                    var_b = get_hwvar_from_sigbit(var_b_bit,"$_AND_", "\\B");
                 }
             }
             else if (conn.first == "\\Y") {
@@ -1006,7 +1027,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     }
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input A of NAND cell is not wire.\n");
+                    var_a = get_hwvar_from_sigbit(var_a_bit,"$_NAND_", "\\A");
                 }
             }
             else if (conn.first == "\\B") {
@@ -1023,7 +1044,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     }
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input B of NAND cell is not wire.\n");
+                    var_b = get_hwvar_from_sigbit(var_b_bit,"$_NAND_", "\\B");
                 }
             }
             else if (conn.first == "\\Y") {
@@ -1072,7 +1093,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input A of OR cell is not wire.\n");
+                    var_a = get_hwvar_from_sigbit(var_a_bit,"$_OR_", "\\A");
                 }
             }
             else if (conn.first == "\\B") {
@@ -1090,7 +1111,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input B of OR cell is not wire.\n");
+                    var_b = get_hwvar_from_sigbit(var_b_bit,"$_OR_", "\\B");
                 }
             }
             else if (conn.first == "\\Y") {
@@ -1130,12 +1151,16 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_NOR_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_NOR_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1173,7 +1198,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input A of XOR cell is not wire.\n");
+                    var_a = get_hwvar_from_sigbit(var_a_bit,"$_XOR_", "\\A");
                 }
             }
             else if (conn.first == "\\B") {
@@ -1191,7 +1216,7 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
                     ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
                 }
                 else {
-                    log("UNEXPECTED OCCASION: input B of XOR cell is not wire.\n");
+                    var_b = get_hwvar_from_sigbit(var_b_bit,"$_XOR_", "\\B");
                 }
             }
             else if (conn.first == "\\Y") {
@@ -1231,12 +1256,16 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_XNOR_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) { 
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a)); 
+                } 
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_XNOR_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1262,12 +1291,16 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_ANDNOT_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_ANDNNOT_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1293,12 +1326,16 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_ORNOT_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_ORNOT_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1325,17 +1362,23 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\S") {
                 RTLIL::SigBit var_s_bit = conn.second.bits()[0];
                 var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX_", "\\S");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                if (var_s_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1345,8 +1388,13 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             else {
                 log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
             }
+            /*
             std::vector<HwExpr> rhs_operands = { HwExpr::make_var(var_a), HwExpr::make_var(var_b), HwExpr::make_var(var_s_mux) };
             rhs = HwExpr::make_nary(Operator::MUX, rhs_operands);
+            */
+            HwExpr nSandB = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary(Operator::MUL, HwExpr::make_var(var_b), HwExpr::make_var(var_s_mux))); // ~(S & B)
+            HwExpr nnSandA = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_s_mux)), HwExpr::make_var(var_a) )); // ~(~S & A)
+            rhs = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary(Operator::MUL, nSandB, nnSandA)); // ~(nSandB & nnSandA)
         }
         std::string instr_name = cell->name.c_str();
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
@@ -1363,17 +1411,23 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_NMUX_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_NMUX_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\S") {
                 RTLIL::SigBit var_s_bit = conn.second.bits()[0];
                 var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_NMUX_", "\\S");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                if (var_s_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1383,8 +1437,13 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             else {
                 log("UNEXPECTED OCCASION: UNKNOWN PORT %s IN CELL TYPE %s.\n", conn.first.c_str(), cell_type.c_str());
             }
+            /*
             std::vector<HwExpr> rhs_operands = { HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)), HwExpr::make_var(var_s_mux) };
             rhs = HwExpr::make_nary(Operator::MUX, rhs_operands);
+            */
+            HwExpr nSandnB = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_var(var_s_mux), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_b)) )); // ~(S & ~B)
+            HwExpr nnSandnA = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary( Operator::MUL, HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_s_mux)), HwExpr::make_unary(Operator::NEG, HwExpr::make_var(var_a)) )); // ~(~S & ~A)
+            rhs = HwExpr::make_unary(Operator::NEG, HwExpr::make_binary(Operator::MUL, nSandnB, nnSandnA)); // ~(nSandnB & nnSandnA)
         }
         std::string instr_name = cell->name.c_str();
         hi = HwInstruction::make_subst(instr_name, lhs, rhs);
@@ -1404,32 +1463,44 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX4_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX4_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_MUX4_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, "$_MUX4_", "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\S") {
                 RTLIL::SigBit var_s_bit = conn.second.bits()[0];
                 var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX4_", "\\S");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                if (var_s_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                }
             }
             else if (conn.first == "\\T") {
                 RTLIL::SigBit var_t_bit = conn.second.bits()[0];
                 var_t_mux = get_hwvar_from_sigbit(var_t_bit, "$_MUX4_", "\\T");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+                if (var_t_bit.wire != NULL){
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1465,57 +1536,79 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX8_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX8_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_MUX8_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, "$_MUX8_", "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\E") {
                 RTLIL::SigBit var_e_bit = conn.second.bits()[0];
                 var_e = get_hwvar_from_sigbit(var_e_bit, "$_MUX8_", "\\E");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_e));
+                if (var_e_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_e));
+                }
             }
             else if (conn.first == "\\F") {
                 RTLIL::SigBit var_f_bit = conn.second.bits()[0];
                 var_f = get_hwvar_from_sigbit(var_f_bit, "$_MUX8_", "\\F");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_f));
+                if (var_f_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_f));
+                }
             }
             else if (conn.first == "\\G") {
                 RTLIL::SigBit var_g_bit = conn.second.bits()[0];
                 var_g = get_hwvar_from_sigbit(var_g_bit, "$_MUX8_", "\\G");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_g));
+                if (var_g_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_g));
+                }
             }
             else if (conn.first == "\\H") {
                 RTLIL::SigBit var_h_bit = conn.second.bits()[0];
                 var_h = get_hwvar_from_sigbit(var_h_bit, "$_MUX8_", "\\H");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_h));
+                if (var_h_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_h));
+                }
             }
             else if (conn.first == "\\S") {
                 RTLIL::SigBit var_s_bit = conn.second.bits()[0];
                 var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX8_", "\\S");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                if (var_s_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                }
             }
             else if (conn.first == "\\T") {
                 RTLIL::SigBit var_t_bit = conn.second.bits()[0];
                 var_t_mux = get_hwvar_from_sigbit(var_t_bit, "$_MUX8_", "\\T");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+                if (var_t_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+                }
             }
             else if (conn.first == "\\U") {
                 RTLIL::SigBit var_u_bit = conn.second.bits()[0];
                 var_u_mux = get_hwvar_from_sigbit(var_u_bit, "$_MUX8_", "\\U");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_u_mux));
+                if (var_u_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_u_mux));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1560,102 +1653,142 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_MUX16_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_MUX16_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_MUX16_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, "$_MUX16_", "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\E") {
                 RTLIL::SigBit var_e_bit = conn.second.bits()[0];
                 var_e = get_hwvar_from_sigbit(var_e_bit, "$_MUX16_", "\\E");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_e));
+                if (var_e_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_e));
+                }
             } 
             else if (conn.first == "\\F") {
                 RTLIL::SigBit var_f_bit = conn.second.bits()[0];
                 var_f = get_hwvar_from_sigbit(var_f_bit, "$_MUX16_", "\\F");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_f));
+                if (var_f_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_f));
+                }
             }
             else if (conn.first == "\\G") {
                 RTLIL::SigBit var_g_bit = conn.second.bits()[0];
                 var_g = get_hwvar_from_sigbit(var_g_bit, "$_MUX16_", "\\G");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_g));
+                if (var_g_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_g));
+                }
             }
             else if (conn.first == "\\H") {
                 RTLIL::SigBit var_h_bit = conn.second.bits()[0];
                 var_h = get_hwvar_from_sigbit(var_h_bit, "$_MUX16_", "\\H");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_h));
+                if (var_h_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_h));
+                }
             }
             else if (conn.first == "\\I") {
                 RTLIL::SigBit var_i_bit = conn.second.bits()[0];
                 var_i = get_hwvar_from_sigbit(var_i_bit, "$_MUX16_", "\\I");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_i));
+                if (var_i_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_i));
+                }
             }
             else if (conn.first == "\\J") {
                 RTLIL::SigBit var_j_bit = conn.second.bits()[0];
                 var_j = get_hwvar_from_sigbit(var_j_bit, "$_MUX16_", "\\J");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_j));
+                if (var_j_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_j));
+                }
             }
             else if (conn.first == "\\K") {
                 RTLIL::SigBit var_k_bit = conn.second.bits()[0];
                 var_k = get_hwvar_from_sigbit(var_k_bit, "$_MUX16_", "\\K");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_k));
+                if (var_k_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_k));
+                }
             }
             else if (conn.first == "\\L") {
                 RTLIL::SigBit var_l_bit = conn.second.bits()[0];
                 var_l = get_hwvar_from_sigbit(var_l_bit, "$_MUX16_", "\\L");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_l));
+                if (var_l_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_l));
+                }
             }
             else if (conn.first == "\\M") {
                 RTLIL::SigBit var_m_bit = conn.second.bits()[0];
                 var_m = get_hwvar_from_sigbit(var_m_bit, "$_MUX16_", "\\M");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_m));
+                if (var_m_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_m));
+                }
             }
             else if (conn.first == "\\N") {
                 RTLIL::SigBit var_n_bit = conn.second.bits()[0];
                 var_n = get_hwvar_from_sigbit(var_n_bit, "$_MUX16_", "\\N");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_n));
+                if (var_n_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_n));
+                }
             }
             else if (conn.first == "\\O") {
                 RTLIL::SigBit var_o_bit = conn.second.bits()[0];
                 var_o = get_hwvar_from_sigbit(var_o_bit, "$_MUX16_", "\\O");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_o));
+                if (var_o_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_o));
+                }
             }
             else if (conn.first == "\\P") {
                 RTLIL::SigBit var_p_bit = conn.second.bits()[0];
                 var_p = get_hwvar_from_sigbit(var_p_bit, "$_MUX16_", "\\P");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_p));
+                if (var_p_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_p));
+                }
             }
             else if (conn.first == "\\S") {
                 RTLIL::SigBit var_s_bit = conn.second.bits()[0];
                 var_s_mux = get_hwvar_from_sigbit(var_s_bit, "$_MUX16_", "\\S");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                if (var_s_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_s_mux));
+                }
             }
             else if (conn.first == "\\T") {
                 RTLIL::SigBit var_t_bit = conn.second.bits()[0];
                 var_t_mux = get_hwvar_from_sigbit(var_t_bit, "$_MUX16_", "\\T");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+                if (var_t_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_t_mux));
+                }
             }
             else if (conn.first == "\\U") {
                 RTLIL::SigBit var_u_bit = conn.second.bits()[0];
                 var_u_mux = get_hwvar_from_sigbit(var_u_bit, "$_MUX16_", "\\U");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_u_mux));
+                if (var_u_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_u_mux));
+                }
             }
             else if (conn.first == "\\V") {
                 RTLIL::SigBit var_v_bit = conn.second.bits()[0];
                 var_v_mux = get_hwvar_from_sigbit(var_v_bit, "$_MUX16_", "\\V");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_v_mux));
+                if (var_v_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_v_mux));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1683,17 +1816,23 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_AOI3_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_AOI3_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_AOI3_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1721,17 +1860,23 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_OAI3_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_OAI3_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_OAI3_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1760,22 +1905,30 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_AOI4_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_AOI4_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_AOI4_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, "$_AOI4_", "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1805,22 +1958,30 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_OAI4_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\B") {
                 RTLIL::SigBit var_b_bit = conn.second.bits()[0];
                 var_b = get_hwvar_from_sigbit(var_b_bit, "$_OAI4_", "\\B");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                if (var_b_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_b));
+                }
             }
             else if (conn.first == "\\C") {
                 RTLIL::SigBit var_c_bit = conn.second.bits()[0];
                 var_c = get_hwvar_from_sigbit(var_c_bit, "$_OAI4_", "\\C");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                if (var_c_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_c));
+                }
             }
             else if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, "$_OAI4_", "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1847,7 +2008,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\A") {
                 RTLIL::SigBit var_a_bit = conn.second.bits()[0];
                 var_a = get_hwvar_from_sigbit(var_a_bit, "$_TBUF_", "\\A");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                if (var_a_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_a));
+                }
             }
             else if (conn.first == "\\Y") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1875,7 +2038,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Q") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1897,7 +2062,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Q") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1919,7 +2086,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Q") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1941,7 +2110,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Q") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -1963,7 +2134,9 @@ HwInstrInfo simcell_to_instruction(RTLIL::Cell* cell) {
             if (conn.first == "\\D") {
                 RTLIL::SigBit var_d_bit = conn.second.bits()[0];
                 var_d = get_hwvar_from_sigbit(var_d_bit, cell_type.str(), "\\D");
-                ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                if (var_d_bit.wire != NULL) {
+                    ret.pred_var_names.insert(hwvar_distinguish_name(var_d));
+                }
             }
             else if (conn.first == "\\Q") {
                 RTLIL::SigBit lhs_bit = conn.second.bits()[0];
@@ -2063,6 +2236,38 @@ void dump_instrnode(std::ostream& f, InstrNode inode) {
     }
     f << stringf("\n");
 }
+/*
+void dump_instr_cycles(dict<std::string, InstrNode>& instr_node) {
+    // int all_instr_size = instr_node.size();
+    dict<std::string, int> eliminate_instrs;    
+    // if in sequential program or already classified loop, assign 0, elsewhire assign 1 
+    for (std::pair<std::string, InstrNode> instr_node_ele : instr_node) {
+        if (instr_node_ele.second.remain_driver == 0) {
+            eliminate_instrs[instr_node_ele.first] = 0;
+        }
+        else {
+            eliminate_instrs[instr_node_ele.first] = 1;
+        }
+    }
+    while (true) {
+        // if all instrs are eliminated, end loop
+        vector<std::string> cycle_instrs = {};
+        bool all_eliminated = true;
+        for (std::pair<std::string, int> eliminate_instr_ele : eliminate_instrs) {
+            if (eliminate_instr_ele.second == 1) {
+                cycle_instrs.push_back(eliminate_instr_ele.first);
+                all_eliminated = false;
+                break;
+            }
+        }
+        if (all_eliminated) {
+            break;
+        }
+
+    }
+    return;
+}
+*/
 
 
 HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
@@ -2114,7 +2319,7 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
     */
     // generate instructions from cells and connections, store into dict
 
-    log("Generated instructions in module %s:\n", module->name.c_str());
+    log("Generated instructions in module %s\n", module->name.c_str());
 
 
     for (std::pair<RTLIL::IdString, RTLIL::Cell *> cell_pair : module->cells_) {
@@ -2296,6 +2501,11 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
                 log("%s\n", oss.str());
             }
         }
+
+        // TODO: get remaining instructions, find cycles in the node map 
+        
+        // dump_instr_cycles();
+
     }
 
     return ret;

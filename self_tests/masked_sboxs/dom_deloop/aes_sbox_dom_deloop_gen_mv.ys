@@ -1,0 +1,11 @@
+read_verilog aes_sbox_dom_deloop_synth.v;
+hierarchy -check -top aes_sbox_dom_deloop;
+proc;
+flatten;
+opt;
+memory;
+opt;
+techmap;
+opt;
+write_rtlil ./output/aes_sbox_dom_deloop.rtlil;
+write_mv ./output/aes_sbox_dom_deloop.mv;
