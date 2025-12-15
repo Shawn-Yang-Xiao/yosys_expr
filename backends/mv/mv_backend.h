@@ -188,7 +188,7 @@ struct HwInstruction {
 
 
 
-
+/*
 struct HwCellDef {
     std::string cell_type;  // cell type name, like $_XNOR_
     std::vector<std::string> inputs;
@@ -210,40 +210,38 @@ struct HwCellDef {
     }
 
 };
+*/
 
 struct MultiBitSignal {
     // width, input, output, public, upto etc.
     std::string signal_name;
     int width;
+    bool with_offset;
     int start_offset;
     bool upto;
-    bool input_port = false;
-    bool output_port = false;
 
 
-    MultiBitSignal() : signal_name(""), width(0), start_offset(0), upto(false), input_port(false), output_port(false) {};
+    MultiBitSignal() : signal_name(""), width(0), start_offset(0), upto(false) {};
 
-    explicit MultiBitSignal(std::string sn, int w, int so, bool u, bool ip, bool op) : signal_name(sn), width(w), start_offset(so), upto(u), input_port(ip), output_port(op) { };
+    explicit MultiBitSignal(std::string sn, int w, bool wo, int so, bool u) : signal_name(sn), width(w), with_offset(wo), start_offset(so), upto(u) { };
 
-    static MultiBitSignal make_onebit(std::string sn, bool ip, bool op) {
+    static MultiBitSignal make_onebit(std::string sn) {
         return MultiBitSignal {
             sn,
             1,
-            0,
             false,
-            ip,
-            op
+            0,
+            false
         };
     }
 
-    static MultiBitSignal make_multibit(std::string sn, int w, int so, bool u, bool ip, bool op) {
+    static MultiBitSignal make_multibit(std::string sn, int w, int so, bool u) {
         return MultiBitSignal {
             sn,
             w,
+            true,
             so,
-            u,
-            ip,
-            op
+            u
         };
     }
 };
@@ -253,6 +251,9 @@ struct HwModuleDef {
     std::string module_name;
     std::vector<MultiBitSignal> inputs;
     std::vector<MultiBitSignal> outputs;
+    std::vector<MultiBitSignal> public_inputs;
+    std::vector<MultiBitSignal> randoms;
+    std::vector<MultiBitSignal> others;
     // maybe there are public and other signals
     std::vector<HwInstruction> instructions;
 

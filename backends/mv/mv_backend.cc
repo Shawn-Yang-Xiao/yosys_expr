@@ -428,12 +428,77 @@ void dump_mv_hwinstruction(std::ostream& f, HwInstruction hi) {
     }
 }
 
+// if port width is one bit, just print signal name, otherwise print signal name[start_offset:end_offset]
+void dump_multibit_port(std::ostream& f, MultiBitSignal mbs) {
+    std::string sig_name = RTLIL::unescape_id(mbs.signal_name);
+    if (mbs.width == 1) {
+        f << stringf("%s", sig_name);
+    }
+    else if (mbs.width >= 2){
+        int end_offset;
+        if (mbs.upto) {
+            end_offset = mbs.start_offset +  mbs.width -1;
+        }
+        f << stringf("%s[%d:%d]", sig_name, mbs.start_offset, end_offset);
+    }
+    else {
+        log("UNEXPECTED OCCASION: MultiBitSignal %s with width < 2 in MV backend\n", sig_name);
+    }
+}
 
 void dump_mv_hwmoduledef(std::ostream& f, HwModuleDef hmd) {
     f << stringf("proc ");
     nonescaped_identifier(f, hmd.module_name);
     f << stringf(":\n");
-    // not to print ports, they are to be added manually
+    // print ports
+    // inputs and outputs are mandatory, randoms and others are optional
+    // print pubic inputs
+    if (hmd.public_inputs.size() >= 1) {
+        f << stringf("  public inputs: ");
+        for (auto pin_sig_it = hmd.public_inputs.begin(); pin_sig_it != hmd.public_inputs.end(); pin_sig_it++) {
+            if (pin_sig_it != hmd.public_inputs.begin()) {
+                f << stringf(", ");
+            }
+            dump_multibit_port(f, *pin_sig_it);
+        } f << stringf("\n");
+    }
+    // print inputs
+    f << stringf("  inputs: ");
+    for (auto in_sig_it = hmd.inputs.begin(); in_sig_it != hmd.inputs.end(); in_sig_it++) {
+        if (in_sig_it != hmd.inputs.begin()) {
+            f << stringf(", ");
+        }
+        dump_multibit_port(f, *in_sig_it);
+    } f << stringf("\n");
+    // print outputs
+    f << stringf("  outputs: "); 
+    for (auto out_sig_it = hmd.outputs.begin(); out_sig_it != hmd.outputs.end(); out_sig_it++) {
+        if (out_sig_it != hmd.outputs.begin()) {
+            f << stringf(", ");
+        }
+        dump_multibit_port(f, *out_sig_it);
+    } f << stringf("\n");
+    // print randoms
+    if (hmd.randoms.size() >= 1) {
+        f << stringf("  randoms: ");
+        for (auto rnd_sig_it = hmd.randoms.begin(); rnd_sig_it != hmd.randoms.end(); rnd_sig_it++) {
+            if (rnd_sig_it != hmd.randoms.begin()) {
+                f << stringf(", ");
+            }
+            dump_multibit_port(f, *rnd_sig_it);
+        } f << stringf("\n");
+    }
+    // print others
+    if (hmd.others.size() >= 1) {
+        f << stringf("  others: ");
+        for (auto oth_sig_it = hmd.others.begin(); oth_sig_it != hmd.others.end(); oth_sig_it++) {
+            if (oth_sig_it != hmd.others.begin()) {
+                f << stringf(", ");
+            }
+            dump_multibit_port(f, *oth_sig_it);
+        } f << stringf("\n");
+    }
+    f << stringf(";\n");
     // print instructions
     for (auto it = hmd.instructions.begin(); it != hmd.instructions.end(); it++) {
         f << stringf("  ");
@@ -2512,6 +2577,248 @@ HwModuleDef module_to_hwmoduledef(RTLIL::Module *module) {
 }
 
 
+MultiBitSignal wire_to_multibitsignal(RTLIL::Wire* wire) {
+    MultiBitSignal ret;
+    int wire_width = wire->width;
+    std::string wire_name = wire->name.str();
+    if (wire_width == 1) {
+        ret = MultiBitSignal::make_onebit(wire_name);
+    }
+    else {
+        bool wire_upto = wire->upto;
+        int wire_start_offset = wire->start_offset;
+        ret = MultiBitSignal::make_multibit(wire_name, wire_width, wire_start_offset, wire_upto);
+    }
+    return ret;
+}
+
+
+std::vector< std::pair<std::string, HwVar> > gen_assign_corr(RTLIL::SigSpec lhs_sig, RTLIL::SigSpec rhs_sig) {
+    std::vector< std::pair<std::string, HwVar> > ret;
+    std::vector<RTLIL::SigBit> lhs_bits = lhs_sig.bits();
+    std::vector<RTLIL::SigBit> rhs_bits = rhs_sig.bits();
+    log_assert(lhs_bits.size() == rhs_bits.size());
+    for (int i=0; i < (int)(lhs_bits.size()); i++) {
+        std::string rhs_distinguish_name;
+        HwVar lhs_var;
+        RTLIL::SigBit lhs_bit = lhs_bits[i];
+        log_assert(lhs_bit.wire != NULL);
+        if (lhs_bit.wire->width == 1) {
+            lhs_var = HwVar::make_single_wire(lhs_bit.wire->name.c_str());
+        }
+        else if (lhs_bit.wire->width >= 2) {
+            lhs_var = HwVar::make_multi_wire(lhs_bit.wire->name.c_str(), lhs_bit.offset);
+        }
+        else {
+            log("UNEXPECTED OCCASION: connect LHS wire %d has invalid width.\n", lhs_bit.wire->name.c_str());
+        }
+
+        HwVar rhs_var;
+        RTLIL::SigBit rhs_bit = rhs_bits[i];
+        log_assert(rhs_bit.wire != NULL);
+        if (rhs_bit.wire->width == 1) {
+            rhs_var = HwVar::make_single_wire(rhs_bit.wire->name.c_str());
+        }
+        else if (rhs_bit.wire->width >= 2) {
+            rhs_var = HwVar::make_multi_wire(rhs_bit.wire->name.c_str(), rhs_bit.offset);
+        }
+        else {
+            log("UNEXPECTED OCCASION: connect RHS wire %d has invalid width.\n", rhs_bit.wire->name.c_str());
+        }
+        rhs_distinguish_name = hwvar_distinguish_name(rhs_var);
+        ret.push_back( std::make_pair(rhs_distinguish_name, lhs_var) );
+    }
+    return ret;
+}
+
+HwVar replace_wire_var(const HwVar &var, const dict<std::string, HwVar> &replace_vars) {
+    HwVar ret;
+    log_assert(var.kind == HwVar::VarKind::WIRE);
+    std::string wire_distinguish_name = hwvar_distinguish_name(var);
+    if (replace_vars.count(wire_distinguish_name) != 0) {
+        ret = replace_vars.at(wire_distinguish_name);
+    }
+    else {
+        ret = var;
+    }
+    return ret;
+}
+
+HwExpr replace_var_in_expr(const HwExpr &expr, const dict<std::string, HwVar> &replace_vars) {
+    HwExpr ret;
+    if (expr.type == HwExpr::ExprType::VAR) {
+        if (expr.var.kind == HwVar::VarKind::CONST) {
+            ret = expr;
+        }
+        else if (expr.var.kind == HwVar::VarKind::WIRE) {
+            // compare distinguishable name
+            std::string distinguish_name = hwvar_distinguish_name(expr.var);
+            if (replace_vars.count(distinguish_name) != 0) {
+                // replace
+                ret = HwExpr::make_var(replace_vars.at(distinguish_name));
+            }
+            else {
+                // do not replace
+                ret = expr;
+            }
+        }
+        else {
+            log("UNEXPECTED OCCASION: unknown varkind.\n");
+        }
+    }
+    else if (expr.type == HwExpr::ExprType::OP1) {
+        HwExpr arg0 = replace_var_in_expr(expr.args[0], replace_vars);
+        ret = HwExpr::make_unary(expr.op, arg0);
+    }
+    else if (expr.type == HwExpr::ExprType::OP2) {
+        HwExpr arg0 = replace_var_in_expr(expr.args[0], replace_vars);
+        HwExpr arg1 = replace_var_in_expr(expr.args[1], replace_vars);
+        ret = HwExpr::make_binary(expr.op, arg0, arg1);
+    }
+    else if (expr.type == HwExpr::ExprType::OPN) {
+        std::vector<HwExpr> args;
+        for (HwExpr old_arg : expr.args) {
+            args.push_back( replace_var_in_expr(old_arg, replace_vars) );
+        }
+        ret = HwExpr::make_nary(expr.op, args);
+    }
+    else {
+        log("UNEXPECTED OCCASION: unsupported HwExpr type.\n");
+    }
+    return ret;
+}
+
+
+HwModuleDef rename_ports(HwModuleDef hmd, RTLIL::Design *port_replace_lib) {
+    
+    HwModuleDef ret;
+    ret.module_name = hmd.module_name;
+
+    std::vector<MultiBitSignal> top_pub_inputs;
+    std::vector<MultiBitSignal> top_inputs;
+    std::vector<MultiBitSignal> top_outputs;
+    std::vector<MultiBitSignal> top_randoms;
+    std::vector<MultiBitSignal> top_others;
+    dict<std::string, HwVar> replace_vars; // use distinguishable name of replaced vars and replace by new vars
+
+    for (std::pair<RTLIL::IdString, RTLIL::Module*> mod_ele : port_replace_lib->modules_) {
+        if (mod_ele.first.str() == "\\inputs") {
+            // outputs of module inputs corresponds to top_inputs
+            for (std::pair<RTLIL::IdString, RTLIL::Wire*> wire_ele : mod_ele.second->wires_) {
+                if (wire_ele.second->port_output) {
+                    MultiBitSignal mb_sig = wire_to_multibitsignal(wire_ele.second);
+                    top_inputs.push_back(mb_sig);
+                }
+            }
+            // for all connections, generate an assignment correspondence
+            for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_ele : mod_ele.second->connections_) {
+                // generate a vector of correspondence relations from a connection pair
+                std::vector< std::pair<std::string, HwVar> > conn_pair_vec = gen_assign_corr(conn_ele.first, conn_ele.second);
+                for (std::pair<std::string, HwVar> conn_pair_ele : conn_pair_vec) {
+                    replace_vars[conn_pair_ele.first] = conn_pair_ele.second;
+                }
+            }
+        }
+        else if (mod_ele.first.str() == "\\outputs") {
+            // outputs of module outputs corresponds to top_outputs
+            for (std::pair<RTLIL::IdString, RTLIL::Wire*> wire_ele : mod_ele.second->wires_) {
+                if (wire_ele.second->port_output) {
+                    MultiBitSignal mb_sig = wire_to_multibitsignal(wire_ele.second);
+                    top_outputs.push_back(mb_sig);
+                }
+            }
+            for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_ele : mod_ele.second->connections_) {
+                std::vector< std::pair<std::string, HwVar> > conn_pair_vec = gen_assign_corr(conn_ele.first, conn_ele.second);
+                for (std::pair<std::string, HwVar> conn_pair_ele : conn_pair_vec) {
+                    replace_vars[conn_pair_ele.first] = conn_pair_ele.second;
+                }
+            }
+        }
+        else if (mod_ele.first.str() == "\\public_inputs") {
+            // outputs of module public_inputs corresponds to top_pub_inputs
+            for (std::pair<RTLIL::IdString, RTLIL::Wire*> wire_ele : mod_ele.second->wires_) {
+                if (wire_ele.second->port_output) {
+                    MultiBitSignal mb_sig = wire_to_multibitsignal(wire_ele.second);
+                    top_pub_inputs.push_back(mb_sig);
+                }
+            }
+            for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_ele : mod_ele.second->connections_) {
+                std::vector< std::pair<std::string, HwVar> > conn_pair_vec = gen_assign_corr(conn_ele.first, conn_ele.second);
+                for (std::pair<std::string, HwVar> conn_pair_ele : conn_pair_vec) {
+                    replace_vars[conn_pair_ele.first] = conn_pair_ele.second;
+                }
+            }
+        }
+        else if (mod_ele.first.str() == "\\randoms") {
+            // outputs of module randoms corresponds to top_randoms
+            for (std::pair<RTLIL::IdString, RTLIL::Wire*> wire_ele : mod_ele.second->wires_) {
+                if (wire_ele.second->port_output) {
+                    MultiBitSignal mb_sig = wire_to_multibitsignal(wire_ele.second);
+                    top_randoms.push_back(mb_sig);
+                }
+            }
+            for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_ele : mod_ele.second->connections_) {
+                std::vector< std::pair<std::string, HwVar> > conn_pair_vec = gen_assign_corr(conn_ele.first, conn_ele.second);
+                for (std::pair<std::string, HwVar> conn_pair_ele : conn_pair_vec) {
+                    replace_vars[conn_pair_ele.first] = conn_pair_ele.second;
+                }
+            }
+        }
+        else if (mod_ele.first.str() == "\\others") {
+            // outputs of module others corresponds to top_others
+            for (std::pair<RTLIL::IdString, RTLIL::Wire*> wire_ele : mod_ele.second->wires_) {
+                if (wire_ele.second->port_output) {
+                    MultiBitSignal mb_sig = wire_to_multibitsignal(wire_ele.second);
+                    top_others.push_back(mb_sig);
+                }
+            }
+            for (std::pair<RTLIL::SigSpec, RTLIL::SigSpec> conn_ele : mod_ele.second->connections_) {
+                std::vector< std::pair<std::string, HwVar> > conn_pair_vec = gen_assign_corr(conn_ele.first, conn_ele.second);
+                for (std::pair<std::string, HwVar> conn_pair_ele : conn_pair_vec) {
+                    replace_vars[conn_pair_ele.first] = conn_pair_ele.second;
+                }
+            }
+        }
+        else {
+            log("UNEXPECTED MODULE NAME: %s\n", mod_ele.first.c_str());
+            
+        }
+    }
+
+    // generate port information of top module
+    ret.inputs = std::move(top_inputs);
+    ret.outputs = std::move(top_outputs);
+    ret.randoms = std::move(top_randoms);
+    ret.public_inputs = std::move(top_pub_inputs);
+    ret.others = std::move(top_others);
+
+    // replace variables in hw instructions
+    for (HwInstruction &hw_inst_ele : hmd.instructions) {
+        // only consider assignment instructions in this stage
+        if (hw_inst_ele.kind == HwInstruction::InstrKind::IK_subst) {
+            // recursively replace variables
+            HwInstruction inst;
+            inst.kind = HwInstruction::InstrKind::IK_subst;
+            inst.name = hw_inst_ele.name;
+            inst.lhs = replace_wire_var(hw_inst_ele.lhs, replace_vars);
+            inst.rhs = replace_var_in_expr(hw_inst_ele.rhs, replace_vars);
+            ret.instructions.push_back(inst);
+        }
+        else if (hw_inst_ele.kind == HwInstruction::InstrKind::IK_glitch) { 
+            HwInstruction inst;
+            inst.kind = HwInstruction::InstrKind::IK_glitch;
+            inst.name = hw_inst_ele.name;
+            inst.lhs = replace_wire_var(hw_inst_ele.lhs, replace_vars);
+            inst.rhs = replace_var_in_expr(hw_inst_ele.rhs, replace_vars);
+            ret.instructions.push_back(inst);
+        }
+        else {
+            log("UNEXPECTED INSTRUCTION KIND: %d\n", hw_inst_ele.kind);
+        }
+    }
+
+    return ret;
+}
 
 
 struct MvBackend : public Backend {
@@ -2519,9 +2826,12 @@ struct MvBackend : public Backend {
     void help() override {
         // TODO: add help message
         log("\n");
-        log("    write_mv [filename]\n");
+        log("    write_mv [options] [filename]\n");
         log("\n");
         log("Generate MV file from RTLIL design for verification.\n");
+        log("\n");
+        log("    -port_rename <file>\n");
+        log("        Read port renaming rules from <file>.\n");
         log("\n");
 
     }
@@ -2530,11 +2840,16 @@ struct MvBackend : public Backend {
 
         // TODO: Process arguments
 
-
+        std::string port_rename_file;
+        bool enable_port_rename = false;
         size_t argidx;
 
         for (argidx = 1; argidx < args.size(); argidx++) {
-            std::string arg = args[argidx];
+            if (args[argidx] == "-port_rename" && argidx+1 < args.size()) {
+                port_rename_file = args[++argidx];
+                enable_port_rename = true;
+                continue;
+            }
             // EXTEND: Arguments 
             break;
         }
@@ -2553,7 +2868,17 @@ struct MvBackend : public Backend {
         RTLIL::Module* top_module = design->top_module();
         HwModuleDef hmd = module_to_hwmoduledef(top_module);
 
-        dump_mv_hwmoduledef(*f, hmd);
+        // rename ports
+        if (enable_port_rename) {
+            std::string verilog_frontend = "verilog -nooverwrite -noblackbox";
+            RTLIL::Design *port_replace_lib = new RTLIL::Design();
+            Frontend::frontend_call(port_replace_lib, nullptr, port_rename_file, verilog_frontend);
+            HwModuleDef renamed_hmd = rename_ports(hmd, port_replace_lib);
+            dump_mv_hwmoduledef(*f, renamed_hmd);
+        }
+        else {
+            dump_mv_hwmoduledef(*f, hmd);
+        }
 
 
     }

@@ -1,0 +1,12 @@
+read_verilog aes_sbox_synth.v;
+hierarchy -check -top aes_sbox_canright_masked_noreuse;
+proc;
+flatten;
+opt;
+memory;
+opt;
+techmap;
+opt;
+write_rtlil ./output3/aes_sbox_canright_masked_noreuse.rtlil;
+write_mv -port_rename port_replace.v ./output3/aes_sbox_canright_masked_noreuse.mv;
+
