@@ -1,0 +1,79 @@
+直接去除 `assign count_d = ...` 的RHS中的count_q，得到的程序会出现错误和无法理解的结果。
+包括但不限于`in_data_basis_x[7:4]`无驱动信号，`mask_o`驱动信号为0。所以需要考虑到底应该如何处理使得优化不会带来错误。
+
+`mask_o`往前和`in_data_basis_x`往前追溯
+
+```
+  assign mask_o = (op_i == CIPH_FWD) ? aes_mvm(out_mask_basis_x, X2S) :
+                  (op_i == CIPH_INV) ? aes_mvm(out_mask_basis_x, X2A) :
+                                       aes_mvm(out_mask_basis_x, X2S);
+```
+注意到有
+```
+  connect \out_data_basis_x 8'00000000
+  connect \out_mask_basis_x 8'00000000
+```
+
+由于这两个都是输出信号
+```
+  aes_dom_inverse_gf2p8 #(
+    .PipelineMul ( PipelineMul )
+  ) u_aes_dom_inverse_gf2p8 (
+    .clk_i   ( clk_i            ),
+    .rst_ni  ( rst_ni           ),
+    .we_i    ( we               ),
+    .a_y     ( in_data_basis_x  ), // input
+    .b_y     ( in_mask_basis_x  ), // input
+    .prd_i   ( in_prd           ), // input
+    .a_y_inv ( out_data_basis_x ), // output
+    .b_y_inv ( out_mask_basis_x ), // output
+    .prd_o   ( out_prd          )  // output
+  );
+```
+
+下面看模块当中是如何实现的。
+
+两个`aes_dom_indep_mul_gf2pn`分别控制
+
+```
+  aes_dom_indep_mul_gf2pn #(
+    .NPower   ( 4           ),
+    .Pipeline ( PipelineMul )
+  ) u_aes_dom_mul_theta_y1 (
+    .clk_i  ( clk_i            ),
+    .rst_ni ( rst_ni           ),
+    .we_i   ( we_i[3]          ),
+    .a_x    ( a_y1_qqq         ), // Share a of x
+    .a_y    ( a_theta          ), // Share a of y
+    .b_x    ( b_y1_qqq         ), // Share b of x
+    .b_y    ( b_theta          ), // Share b of y
+    .z_0    ( prd_i.prd_4[7:4] ), // Randomness for resharing
+    .a_q    ( a_y_inv[3:0]     ), // Share a of q
+    .b_q    ( b_y_inv[3:0]     )  // Share b of q
+  );
+```
+
+```
+  aes_dom_indep_mul_gf2pn #(
+    .NPower   ( 4           ),
+    .Pipeline ( PipelineMul )
+  ) u_aes_dom_mul_theta_y0 (
+    .clk_i  ( clk_i            ),
+    .rst_ni ( rst_ni           ),
+    .we_i   ( we_i[3]          ),
+    .a_x    ( a_theta          ), // Share a of x
+    .a_y    ( a_y0_qqq         ), // Share a of y
+    .b_x    ( b_theta          ), // Share b of x
+    .b_y    ( b_y0_qqq         ), // Share b of y
+    .z_0    ( prd_i.prd_4[3:0] ), // Randomness for resharing
+    .a_q    ( a_y_inv[7:4]     ), // Share a of q
+    .b_q    ( b_y_inv[7:4]     )  // Share b of q
+  );
+```
+
+关注的we_i[3]作为两个模块的输入控制信号。
+
+
+在`prim_generic_flop_en`当中可以发现，en = false的情况下，q_o 应该就是0，所以这应该可以解释结果是0的情况。要输出正确的结果就需要考虑we_i会等于3的情况。
+
+

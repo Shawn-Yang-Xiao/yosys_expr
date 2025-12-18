@@ -1,0 +1,6 @@
+>proc aes_sbox_dom_deloop added
+>Checking NI for aes_sbox_dom_deloop: (no transition,no glitch)
+001,117 tuples to check
+1.117 K tuples checked
+aes_sbox_dom_deloop is NI at order 1
+>Bye bye!
